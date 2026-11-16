@@ -12,6 +12,7 @@ import { calculateComponentEarned, calculateStudentTarget } from '../targetCalcu
 import {
   detectCompleteness,
   calculateClassStatistics,
+  calculateCompetitorAnalysis,
   calculateFairScore,
   calculatePotentialTotals,
   calculateHeadToHead,
@@ -218,12 +219,14 @@ export async function runAllAlgorithmTests(): Promise<TestSuiteSummary> {
     const passed =
       calc.verdict === 'unreachable' &&
       calc.difficulty === 'unreachable' &&
-      calc.sessionalTotalEarned === 15;
+      calc.sessionalTotalEarned === 15 &&
+      calc.neededInFinal !== null &&
+      calc.neededInFinal <= 60;
 
     return {
       passed,
-      expected: 'verdict = unreachable, sessional = 15',
-      actual: `verdict = ${calc.verdict}, sessional = ${calc.sessionalTotalEarned}`,
+      expected: 'verdict = unreachable, sessional = 15, neededInFinal <= 60',
+      actual: `verdict = ${calc.verdict}, sessional = ${calc.sessionalTotalEarned}, neededInFinal = ${calc.neededInFinal}`,
     };
   });
 
@@ -784,6 +787,115 @@ export async function runAllAlgorithmTests(): Promise<TestSuiteSummary> {
       passed,
       expected: 'Full workflow creates, parses, saves, reloads, and computes target for CSE 411',
       actual: `reloadedStudents=${reloaded?.students.length}, myRoll=${reloaded?.myRoll}, sessionalEarned=${target?.sessionalTotalEarned}`,
+    };
+  });
+
+  // 24. A+ PREREQUISITE BLANK RULE (<3 CTs, Assignment, Attendance)
+  test('Target Calculation', 'Semester needed marks is blank (null) unless >=3 CTs, Assignment & Attendance exist', () => {
+    const missingCt3: StudentRecord = {
+      id: 'm1',
+      name: 'Only 2 CTs',
+      isMe: true,
+      marks: { attendance: 10, ct1: 18, ct2: 19, ct3: null, ct4: null, assignment: 9 },
+    };
+    const missingAssign: StudentRecord = {
+      id: 'm2',
+      name: 'Missing Assignment',
+      isMe: true,
+      marks: { attendance: 10, ct1: 18, ct2: 19, ct3: 17, assignment: null },
+    };
+    const missingAtt: StudentRecord = {
+      id: 'm3',
+      name: 'Missing Attendance',
+      isMe: true,
+      marks: { attendance: null, ct1: 18, ct2: 19, ct3: 17, assignment: 9 },
+    };
+    const complete: StudentRecord = {
+      id: 'm4',
+      name: 'All Present',
+      isMe: true,
+      marks: { attendance: 10, ct1: 18, ct2: 19, ct3: 17, assignment: 9 },
+    };
+
+    const c1 = calculateStudentTarget(missingCt3, DEFAULT_ASSESSMENT_SCHEME);
+    const c2 = calculateStudentTarget(missingAssign, DEFAULT_ASSESSMENT_SCHEME);
+    const c3 = calculateStudentTarget(missingAtt, DEFAULT_ASSESSMENT_SCHEME);
+    const c4 = calculateStudentTarget(complete, DEFAULT_ASSESSMENT_SCHEME);
+
+    const passed =
+      c1.neededInFinal === null &&
+      c1.verdict === 'incomplete' &&
+      c2.neededInFinal === null &&
+      c2.verdict === 'incomplete' &&
+      c3.neededInFinal === null &&
+      c3.verdict === 'incomplete' &&
+      c4.neededInFinal !== null &&
+      c4.verdict !== 'incomplete';
+
+    return {
+      passed,
+      expected: 'Blank (null) when any prerequisite missing; numeric when 3 CTs + Assignment + Attendance exist',
+      actual: `c1=${c1.neededInFinal}, c2=${c2.neededInFinal}, c3=${c3.neededInFinal}, c4=${c4.neededInFinal}`,
+    };
+  });
+
+  // 25. FINAL MARKS NEEDED CAP <= 60
+  test('Target Calculation', 'Semester needed marks never exceeds final weight (60.00)', () => {
+    const zeroStudent: StudentRecord = {
+      id: 'z1',
+      name: 'Zero Sessional',
+      isMe: true,
+      marks: { attendance: 0, ct1: 0, ct2: 0, ct3: 0, assignment: 0 },
+    };
+    const calc = calculateStudentTarget(zeroStudent, DEFAULT_ASSESSMENT_SCHEME);
+    const passed = calc.neededInFinal !== null && calc.neededInFinal <= 60 && calc.verdict === 'unreachable';
+
+    return {
+      passed,
+      expected: 'neededInFinal <= 60 and verdict = unreachable even with 0 sessional marks',
+      actual: `neededInFinal=${calc.neededInFinal}, verdict=${calc.verdict}`,
+    };
+  });
+
+  // 26. COMPETITOR WINDOW ALWAYS >= 10 PEERS IN ASCENDING RANK ORDER
+  test('Competitor Analytics', 'Always compares at least 10 classmates regardless of rank (Top, Middle, Bottom)', () => {
+    const twentyStudents: StudentRecord[] = Array.from({ length: 20 }, (_, i) => ({
+      id: `st_${i + 1}`,
+      roll: String(2100 + i + 1),
+      name: `Student ${i + 1}`,
+      isMe: false,
+      marks: {
+        attendance: 10,
+        ct1: 20 - i * 0.5,
+        ct2: 20 - i * 0.5,
+        ct3: 20 - i * 0.5,
+        assignment: 10,
+      },
+    }));
+
+    const topMe = { ...twentyStudents[0], isMe: true };
+    const topRes = calculateCompetitorAnalysis(topMe, twentyStudents, DEFAULT_ASSESSMENT_SCHEME);
+
+    const midMe = { ...twentyStudents[9], isMe: true };
+    const midRes = calculateCompetitorAnalysis(midMe, twentyStudents, DEFAULT_ASSESSMENT_SCHEME);
+
+    const botMe = { ...twentyStudents[19], isMe: true };
+    const botRes = calculateCompetitorAnalysis(botMe, twentyStudents, DEFAULT_ASSESSMENT_SCHEME);
+
+    const topCount = topRes.competitorsAbove.length + topRes.competitorsBelow.length;
+    const midCount = midRes.competitorsAbove.length + midRes.competitorsBelow.length;
+    const botCount = botRes.competitorsAbove.length + botRes.competitorsBelow.length;
+
+    const botAboveSorted = botRes.competitorsAbove.every(
+      (c, idx, arr) => idx === 0 || arr[idx - 1].rank <= c.rank
+    );
+
+    const passed = topCount >= 10 && midCount >= 10 && botCount >= 10 && botAboveSorted;
+
+    return {
+      passed,
+      expected: '>= 10 peers compared for rank #1, #10, and #20 with ascending rank order',
+      actual: `topCount=${topCount}, midCount=${midCount}, botCount=${botCount}, ascending=${botAboveSorted}`,
     };
   });
 

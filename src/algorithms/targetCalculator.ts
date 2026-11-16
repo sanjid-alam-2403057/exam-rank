@@ -28,7 +28,7 @@ export function calculateComponentEarned(
       maxPossibleSoFar: component.weight,
       isCompleted: isTaken,
       notes: isTaken
-        ? `${rawVal} / ${max} (${((rawVal / max) * 100).toFixed(1)}%)`
+        ? `${Number(rawVal).toFixed(2)} / ${max.toFixed(2)} (${((rawVal / max) * 100).toFixed(2)}%)`
         : 'Not yet taken',
       takenCount: isTaken ? 1 : 0,
       totalCount: 1,
@@ -73,7 +73,7 @@ export function calculateComponentEarned(
       earnedScaledMarks: 0,
       maxPossibleSoFar: component.weight,
       isCompleted: false,
-      notes: `0 of ${subComponents.length} held so far`,
+      notes: `0 of ${subComponents.length} taken`,
       takenCount: 0,
       totalCount: subComponents.length,
       subScores: subScoreList.map((s) => ({
@@ -149,33 +149,29 @@ export function calculateSessionalBounds(
         bestTotal += earned;
         worstTotal += earned;
       } else {
-        // Untaken: best case is 100%, worst case is 0%
         bestTotal += comp.weight;
         worstTotal += 0;
       }
     } else {
-      // Best N of M
       const subs = comp.subComponents || [];
       const bestN = comp.bestN || subs.length;
 
-      // Best case scenario marks: replace null with full marks
       const bestScores = subs.map((sub) => {
         const val = currentMarks[sub.id];
         return val !== null && val !== undefined && !isNaN(val)
           ? val / sub.maxMarks
-          : 1.0; // 100%
+          : 1.0;
       });
       bestScores.sort((a, b) => b - a);
       const bestAvg =
         bestScores.slice(0, bestN).reduce((a, b) => a + b, 0) / bestN;
       bestTotal += bestAvg * comp.weight;
 
-      // Worst case scenario marks: replace null with 0
       const worstScores = subs.map((sub) => {
         const val = currentMarks[sub.id];
         return val !== null && val !== undefined && !isNaN(val)
           ? val / sub.maxMarks
-          : 0.0; // 0%
+          : 0.0;
       });
       worstScores.sort((a, b) => b - a);
       const worstAvg =
@@ -207,6 +203,49 @@ function getDifficultyLevel(
 }
 
 /**
+ * Checks whether required sessional marks (at least 3 CTs, Assignment, Attendance) are present.
+ * If any of these are absent/missing, the final target needed must remain blank.
+ */
+function checkTargetPrerequisites(
+  scheme: AssessmentScheme,
+  activeMarks: Record<string, number | null>,
+  componentsBreakdown: ComponentBreakdown[]
+): { met: boolean; reasons: string[] } {
+  const reasons: string[] = [];
+  const nonFinals = scheme.components.filter((c) => !c.isFinalExam);
+
+  for (const comp of nonFinals) {
+    if (comp.type === 'best_n_of_m') {
+      const subs = comp.subComponents || [];
+      const requiredCts = Math.min(3, subs.length);
+      const breakdown = componentsBreakdown.find((b) => b.componentId === comp.id);
+      const taken = breakdown?.takenCount ?? 0;
+      if (taken < requiredCts) {
+        reasons.push(`Need at least ${requiredCts} CTs (${taken} present)`);
+      }
+    } else if (comp.type === 'single') {
+      const idLower = comp.id.toLowerCase();
+      const nameLower = comp.name.toLowerCase();
+      const isAttendance = idLower.includes('attendance') || nameLower.includes('attendance');
+      const isAssignment = idLower.includes('assignment') || nameLower.includes('assignment');
+
+      if (isAttendance || isAssignment) {
+        const val = activeMarks[comp.id];
+        const present = val !== null && val !== undefined && !isNaN(val);
+        if (!present) {
+          reasons.push(`${comp.name} mark missing`);
+        }
+      }
+    }
+  }
+
+  return {
+    met: reasons.length === 0,
+    reasons,
+  };
+}
+
+/**
  * Main Target Calculation for a student given an AssessmentScheme
  */
 export function calculateStudentTarget(
@@ -216,13 +255,11 @@ export function calculateStudentTarget(
 ): TargetCalculation {
   const activeMarks = { ...student.marks, ...(whatIfOverrides || {}) };
 
-  // Filter components
   const finalComp = scheme.components.find((c) => c.isFinalExam);
   const finalWeight = finalComp ? finalComp.weight : 60;
   const nonFinals = scheme.components.filter((c) => !c.isFinalExam);
   const sessionalWeightTotal = nonFinals.reduce((acc, c) => acc + c.weight, 0);
 
-  // Compute breakdown per component
   const componentsBreakdown: ComponentBreakdown[] = nonFinals.map((comp) =>
     calculateComponentEarned(comp, activeMarks)
   );
@@ -239,51 +276,78 @@ export function calculateStudentTarget(
   const targetTotalMarks = scheme.targetGradeThreshold;
   const targetGradeName = scheme.targetGradeName || 'A+';
 
+  const prereq = checkTargetPrerequisites(scheme, activeMarks, componentsBreakdown);
   const rawNeeded = targetTotalMarks - sessionalTotalEarned;
-  const neededInFinal = Number(Math.max(0, rawNeeded).toFixed(2));
-  const neededPercentage = Number(((neededInFinal / finalWeight) * 100).toFixed(1));
 
-  let verdict: 'secured' | 'reachable' | 'unreachable';
+  let neededInFinal: number | null;
+  let neededPercentage: number | null;
+  let verdict: TargetCalculation['verdict'];
   let verdictMessage: string;
+  let difficulty: TargetCalculation['difficulty'];
 
-  if (sessionalTotalEarned >= targetTotalMarks) {
+  if (!prereq.met) {
+    neededInFinal = null;
+    neededPercentage = null;
+    verdict = 'incomplete';
+    difficulty = 'incomplete';
+    verdictMessage = `Waiting on: ${prereq.reasons.join(', ')}.`;
+  } else if (sessionalTotalEarned >= targetTotalMarks) {
+    neededInFinal = 0;
+    neededPercentage = 0;
     verdict = 'secured';
-    verdictMessage = `Already secured! Sessional marks (${sessionalTotalEarned}) alone exceed the ${targetGradeName} threshold (${targetTotalMarks}).`;
+    difficulty = 'secured';
+    verdictMessage = `Secured (${sessionalTotalEarned.toFixed(2)} >= ${targetTotalMarks.toFixed(2)}).`;
   } else if (rawNeeded <= finalWeight) {
+    neededInFinal = Number(Math.min(finalWeight, Math.max(0, rawNeeded)).toFixed(2));
+    neededPercentage = Number(((neededInFinal / finalWeight) * 100).toFixed(2));
     verdict = 'reachable';
-    verdictMessage = `Needs ${neededInFinal} out of ${finalWeight} (${neededPercentage}%) in semester final for ${targetGradeName}`;
+    difficulty = getDifficultyLevel(rawNeeded, finalWeight);
+    verdictMessage = `Needs ${neededInFinal.toFixed(2)} / ${finalWeight.toFixed(2)} (${neededPercentage.toFixed(2)}%) for ${targetGradeName}.`;
   } else {
+    // Never exceed finalWeight (60)
+    neededInFinal = Number(finalWeight.toFixed(2));
+    neededPercentage = 100;
     verdict = 'unreachable';
+    difficulty = 'unreachable';
     const maxPossible = sessionalTotalEarned + finalWeight;
-    verdictMessage = `Not mathematically reachable. Sessional (${sessionalTotalEarned}) + Maximum Final (${finalWeight}) = ${maxPossible.toFixed(2)}, which is below ${targetTotalMarks}.`;
+    verdictMessage = `Unreachable (max possible ${maxPossible.toFixed(2)} < ${targetTotalMarks.toFixed(2)}).`;
   }
 
-  const difficulty = getDifficultyLevel(rawNeeded, finalWeight);
-
-  // Best & Worst case final marks needed
   const bestCaseFinalNeeded = Number(
-    Math.max(0, targetTotalMarks - bestCaseSessional).toFixed(2)
+    Math.min(finalWeight, Math.max(0, targetTotalMarks - bestCaseSessional)).toFixed(2)
   );
   const worstCaseFinalNeeded = Number(
-    Math.max(0, targetTotalMarks - worstCaseSessional).toFixed(2)
+    Math.min(finalWeight, Math.max(0, targetTotalMarks - worstCaseSessional)).toFixed(2)
   );
 
-  // All grade targets
   const allGradeTargets: GradeTargetResult[] = (scheme.gradeThresholds || []).map(
     (threshold) => {
-      const needed = Number(Math.max(0, threshold.minMarks - sessionalTotalEarned).toFixed(2));
-      const pct = Number(((needed / finalWeight) * 100).toFixed(1));
+      if (!prereq.met) {
+        return {
+          grade: threshold.grade,
+          minMarks: threshold.minMarks,
+          neededInFinal: null,
+          finalPercentage: null,
+          isReachable: false,
+          isAlreadySecured: false,
+          difficulty: 'incomplete',
+        };
+      }
+
+      const delta = threshold.minMarks - sessionalTotalEarned;
+      const clampedNeeded = Number(Math.min(finalWeight, Math.max(0, delta)).toFixed(2));
+      const pct = Number(((clampedNeeded / finalWeight) * 100).toFixed(2));
       const isSecured = sessionalTotalEarned >= threshold.minMarks;
-      const isReachable = threshold.minMarks - sessionalTotalEarned <= finalWeight;
+      const isReachable = delta <= finalWeight;
 
       return {
         grade: threshold.grade,
         minMarks: threshold.minMarks,
-        neededInFinal: needed,
+        neededInFinal: clampedNeeded,
         finalPercentage: pct,
         isReachable,
         isAlreadySecured: isSecured,
-        difficulty: getDifficultyLevel(threshold.minMarks - sessionalTotalEarned, finalWeight),
+        difficulty: getDifficultyLevel(delta, finalWeight),
       };
     }
   );
@@ -297,6 +361,8 @@ export function calculateStudentTarget(
     finalWeight,
     targetTotalMarks,
     targetGradeName,
+    isTargetPrerequisitesMet: prereq.met,
+    missingPrerequisiteReasons: prereq.reasons,
     neededInFinal,
     neededPercentage,
     verdict,

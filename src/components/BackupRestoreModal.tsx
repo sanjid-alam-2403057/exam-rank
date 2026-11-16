@@ -22,6 +22,7 @@ import {
   requestPersistentStorage,
   isUsingMemoryFallback,
   deleteAllData,
+  tryLoadGitHubRepoData,
 } from '../storage';
 import { useFeedback } from './FeedbackSystem';
 
@@ -87,10 +88,48 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
       console.error('Backup download error:', err);
       showAlert(
         'Download Blocked',
-        'Direct download was blocked by your browser. Use the "Copy Backup as Text" button below instead.'
+        'Direct download was blocked by your browser. Use "Copy Backup as Text" below instead.'
       );
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleDownloadGitHubFile = async () => {
+    setIsExporting(true);
+    try {
+      const backupData = await exportAll();
+      const jsonString = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'saved-courses.json');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded saved-courses.json — upload it into public/ on GitHub.', 'success');
+    } catch {
+      showAlert('Download Blocked', 'Could not download file. Use "Copy Backup as Text" and save as public/saved-courses.json.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleSyncFromGitHub = async () => {
+    setIsImporting(true);
+    try {
+      const res = await tryLoadGitHubRepoData();
+      if (res.loaded) {
+        showToast(`Loaded from ${res.source} (${res.coursesCount} course${res.coursesCount === 1 ? '' : 's'}).`, 'success');
+        onDataRestored();
+        onClose();
+      } else {
+        showAlert('No GitHub File Found', 'Put saved-courses.json or class-data.csv inside the public/ folder in your GitHub repo first.');
+      }
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -100,10 +139,10 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
       const jsonString = JSON.stringify(backupData, null, 2);
       await navigator.clipboard.writeText(jsonString);
       setCopiedText(true);
-      showToast('Complete backup JSON copied to clipboard!', 'success');
+      showToast('Backup JSON copied to clipboard.', 'success');
       setTimeout(() => setCopiedText(false), 3000);
-    } catch (err) {
-      showAlert('Clipboard Error', 'Could not copy automatically. Please try the download option.');
+    } catch {
+      showAlert('Clipboard Error', 'Could not copy automatically.');
     }
   };
 
@@ -274,21 +313,23 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
           {/* TAB 1: BACKUP */}
           {activeTab === 'backup' && (
             <div className="space-y-4">
-              <div className="p-3.5 bg-indigo-50/60 rounded-xl border border-indigo-100 text-indigo-950 space-y-1">
-                <div className="font-bold flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                  <span>One-Click Full Portable Backup</span>
-                </div>
-                <p className="text-[11px] text-slate-600">
-                  Exports your entire library: assessment schemes, uploaded rosters, custom rolls, manual marks, watchlists, and dated snapshots into a single offline JSON file.
-                </p>
-              </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <button
+                  onClick={handleDownloadGitHubFile}
+                  disabled={isExporting}
+                  className="p-4 rounded-xl border border-emerald-200 bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex flex-col items-center justify-center gap-1.5 shadow-xs transition-colors"
+                >
+                  <Download className="w-5 h-5" />
+                  <span>Save for GitHub</span>
+                  <span className="text-[10px] font-normal text-emerald-100">
+                    public/saved-courses.json
+                  </span>
+                </button>
+
                 <button
                   onClick={handleDownloadBackup}
                   disabled={isExporting}
-                  className="p-4 rounded-xl border border-indigo-200 bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex flex-col items-center justify-center gap-2 shadow-xs transition-colors"
+                  className="p-4 rounded-xl border border-indigo-200 bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex flex-col items-center justify-center gap-1.5 shadow-xs transition-colors"
                 >
                   <Download className="w-5 h-5" />
                   <span>Download Backup JSON</span>
@@ -296,23 +337,18 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
                     examinex-backup-{new Date().toISOString().split('T')[0]}.json
                   </span>
                 </button>
-
-                <button
-                  onClick={handleCopyBackupText}
-                  className="p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold flex flex-col items-center justify-center gap-2 transition-colors"
-                >
-                  {copiedText ? <Check className="w-5 h-5 text-emerald-600" /> : <Copy className="w-5 h-5 text-slate-600" />}
-                  <span>{copiedText ? 'Copied to Clipboard!' : 'Copy Backup as Text'}</span>
-                  <span className="text-[10px] font-normal text-slate-500">
-                    Instant fallback if downloads are blocked
-                  </span>
-                </button>
               </div>
 
-              <div className="pt-2 text-[11px] text-slate-500">
-                <p>
-                  💡 <strong>Tip:</strong> Keep this file on your Google Drive or USB drive. It contains no passwords or cloud keys, only your marks data.
-                </p>
+              <button
+                onClick={handleCopyBackupText}
+                className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold flex items-center justify-center gap-2 transition-colors"
+              >
+                {copiedText ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-600" />}
+                <span>{copiedText ? 'Copied to Clipboard!' : 'Copy Backup as Text'}</span>
+              </button>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600">
+                Upload <strong>saved-courses.json</strong> (or your CSV named <strong>class-data.csv</strong>) into the <code className="bg-slate-200 px-1 rounded">public/</code> folder on GitHub so your data loads automatically without re-uploading.
               </div>
             </div>
           )}
@@ -320,9 +356,14 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
           {/* TAB 2: RESTORE */}
           {activeTab === 'restore' && (
             <div className="space-y-4">
-              <p className="text-slate-600">
-                Upload a previously saved <code className="bg-slate-100 px-1 py-0.5 rounded text-indigo-700">examinex-backup-*.json</code> file or paste its raw JSON text below.
-              </p>
+              <button
+                onClick={handleSyncFromGitHub}
+                disabled={isImporting}
+                className="w-full p-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold flex items-center justify-center gap-2 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>Load Saved Data from GitHub (public/saved-courses.json)</span>
+              </button>
 
               {/* File upload picker */}
               <div className="p-4 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50/50 flex flex-col items-center justify-center gap-2 text-center">
@@ -342,7 +383,7 @@ export const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
                   Choose Backup File
                 </label>
                 <span className="text-[11px] text-slate-500">
-                  {fileInputRef.current?.files?.[0]?.name || 'Supports examinex-backup-*.json'}
+                  {fileInputRef.current?.files?.[0]?.name || 'Supports .json backups'}
                 </span>
               </div>
 

@@ -206,11 +206,8 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
               <span className="text-xs text-slate-500 font-mono">Browser Session Safe</span>
             </div>
             <h1 className="text-xl font-bold text-slate-900 mt-1">
-              Course CSV Upload & Column Mapping
+              Course CSV Upload & Mapping
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Upload class marks. Blank cells are treated as &quot;not yet taken&quot; (never zero).
-            </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">

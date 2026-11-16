@@ -13,7 +13,6 @@ import { AssessmentScheme, StudentRecord } from './types';
 import { DEFAULT_ASSESSMENT_SCHEME } from './data/defaultScheme';
 import { getDemoStudents } from './data/demoData';
 import { Header, NavTab } from './components/Header';
-import { PrivacyBanner } from './components/PrivacyBanner';
 import { TargetCalculatorView } from './components/TargetCalculatorView';
 import { ClassComparisonView } from './components/ClassComparisonView';
 import { SchemeEditor } from './components/SchemeEditor';
@@ -32,6 +31,7 @@ import {
   isUsingMemoryFallback,
   requestPersistentStorage,
   deleteAllData,
+  tryLoadGitHubRepoData,
   StoredCourse,
 } from './storage';
 import {
@@ -101,17 +101,24 @@ function AppContent() {
         setLastBackupTimestamp(settings.lastBackupTimestamp);
         setIsAnonymized(settings.isAnonymized ?? true);
 
-        const list = await listCourses();
-        setCoursesList(list);
+        let list = await listCourses();
 
         if (list.length === 0) {
-          // First launch: initialize default course
-          const demo = createDefaultDemoCourse();
-          await saveCourse(demo);
-          setCurrentCourse(demo);
-          setCoursesList([{ id: demo.id, courseCode: demo.courseCode, courseName: demo.courseName, studentsCount: demo.students.length }]);
+          // Try loading user-committed GitHub repo data (public/saved-courses.json or public/class-data.csv)
+          const ghLoad = await tryLoadGitHubRepoData();
+          if (ghLoad.loaded) {
+            list = await listCourses();
+            const reloadedSettings = await loadSettings();
+            const active = (await loadCourse(reloadedSettings.activeCourseId)) || (list[0] ? await loadCourse(list[0].id) : null);
+            if (active) setCurrentCourse(active);
+          } else {
+            // Fallback: initialize default demo course
+            const demo = createDefaultDemoCourse();
+            await saveCourse(demo);
+            setCurrentCourse(demo);
+            list = [{ id: demo.id, courseCode: demo.courseCode, courseName: demo.courseName, studentsCount: demo.students.length, lastUpdated: Date.now() }];
+          }
         } else {
-          // Load active course
           const active = await loadCourse(settings.activeCourseId);
           if (active) {
             setCurrentCourse(active);
@@ -120,6 +127,7 @@ function AppContent() {
             if (first) setCurrentCourse(first);
           }
         }
+        setCoursesList(list);
 
         if (isUsingMemoryFallback()) {
           setIsStorageBlockedBanner(true);
@@ -359,37 +367,32 @@ function AppContent() {
     {
       id: 'comparison' as NavTab,
       label: 'Class Comparison',
-      badge: 'Main',
+      badge: null,
       icon: Users,
-      description: 'Rank, competitors, radar & predictions',
     },
     {
       id: 'calculator' as NavTab,
       label: 'A+ Target Calculator',
       badge: null,
       icon: Target,
-      description: 'Final exam marks needed & bounds',
     },
     {
       id: 'scheme' as NavTab,
       label: 'Assessment Scheme',
       badge: null,
       icon: Sliders,
-      description: 'Weights, Best N of M & grade cutoffs',
     },
     {
       id: 'upload' as NavTab,
       label: 'CSV Data & Mapping',
       badge: null,
       icon: FileSpreadsheet,
-      description: 'Upload class CSV, mapping & validation',
     },
     {
       id: 'tests' as NavTab,
-      label: 'Algorithm & Storage Tests',
-      badge: '23 Tests',
+      label: 'Tests',
+      badge: null,
       icon: CheckSquare,
-      description: 'Math invariants & IndexedDB proofs',
     },
   ];
 
@@ -437,7 +440,7 @@ function AppContent() {
           <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
             <Clock className="w-4 h-4 text-amber-400 shrink-0" />
             <span>
-              You haven&apos;t downloaded a backup in <strong>{daysSinceBackup} days</strong>. Protect your data against browser cache wipes by making a 5-second backup.
+              Last backup: <strong>{daysSinceBackup} days</strong> ago.
             </span>
             <button
               onClick={() => setShowBackupModal(true)}
@@ -448,14 +451,6 @@ function AppContent() {
           </div>
         </div>
       )}
-
-      {/* Privacy Notice Banner */}
-      <PrivacyBanner
-        isAnonymized={isAnonymized}
-        onToggleAnonymize={handleToggleAnonymize}
-        onDeleteData={handleResetData}
-        hasData={students.length > 0}
-      />
 
       {/* Main Workspace with Sidebar Navigation */}
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col lg:flex-row gap-6">
@@ -567,29 +562,12 @@ function AppContent() {
               </div>
             )}
           </div>
-
-          {/* Backup & Offline Info Card */}
-          <div className="p-3.5 bg-indigo-50/60 rounded-xl border border-indigo-100 text-xs space-y-2">
-            <div className="flex items-center gap-2 font-bold text-indigo-950">
-              <Database className="w-4 h-4 text-indigo-600" />
-              <span>Personal Data</span>
-            </div>
-            <p className="text-[11px] text-slate-600 leading-relaxed">
-              Saved automatically in IndexedDB. Use Backup & Restore to move between your computer and mobile browser.
-            </p>
-            <button
-              onClick={() => setShowBackupModal(true)}
-              className="w-full py-1.5 px-3 bg-white hover:bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-lg text-center transition-colors shadow-2xs text-[11px]"
-            >
-              Open Backup & Restore
-            </button>
-          </div>
         </aside>
 
         {/* Content Viewport */}
         <main className="flex-1 min-w-0 space-y-6">
-          {/* Active Dataset Status pill banner */}
-          <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+          {/* Active Dataset Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-white px-4 py-2.5 rounded-xl border border-slate-200 shadow-xs">
             <div className="flex items-center gap-2">
               <span
                 className={`w-2 h-2 rounded-full ${
@@ -597,36 +575,24 @@ function AppContent() {
                 }`}
               />
               <span className="font-semibold text-slate-800">
-                {isDemoMode
-                  ? 'Demo Mode Active'
-                  : students.length > 0
-                  ? 'Custom CSV Dataset Active'
-                  : 'No Dataset Loaded'}
+                {scheme.courseCode}
               </span>
               <span className="text-slate-400">·</span>
               <span className="text-slate-600 font-mono">
-                {students.length > 0
-                  ? `${students.length} students loaded`
-                  : 'Upload CSV or click Load Demo to begin'}
+                {students.length} students
               </span>
               {currentMeStudent && (
                 <>
                   <span className="text-slate-400">·</span>
                   <span className="text-indigo-700 font-medium">
-                    You:{' '}
-                    <strong>
-                      {isAnonymized ? 'Me (Student)' : currentMeStudent.name}
-                    </strong>{' '}
-                    <span className="font-mono text-slate-500">
-                      ({currentMeStudent.roll || 'No Roll'})
-                    </span>
+                    {isAnonymized ? 'Me' : currentMeStudent.name} ({currentMeStudent.roll || 'No Roll'})
                   </span>
                 </>
               )}
             </div>
 
-            <div className="flex items-center gap-3 text-[11px] text-slate-500">
-              <span>Target: <strong className="text-indigo-700">{scheme.targetGradeThreshold} marks ({scheme.targetGradeName})</strong></span>
+            <div className="text-[11px] text-slate-600 font-mono">
+              Target: <strong className="text-indigo-700">{scheme.targetGradeName} ({scheme.targetGradeThreshold})</strong>
             </div>
           </div>
 
@@ -740,20 +706,16 @@ function AppContent() {
       />
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-6 px-4 sm:px-6 text-xs text-slate-500 mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-800">EXAMINEX RANK</span>
-            <span>—</span>
-            <span>Personal Static Web App for GitHub Pages</span>
-          </div>
+      <footer className="border-t border-slate-200 bg-white py-4 px-4 sm:px-6 text-xs text-slate-500 mt-auto">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+          <span className="font-bold text-slate-800">EXAMINEX RANK</span>
 
           <div className="flex items-center gap-4 text-slate-500 text-[11px]">
             <button
               onClick={() => setActiveTab('tests')}
               className="hover:text-slate-900 underline underline-offset-2"
             >
-              Run 23 Automated Tests
+              Tests
             </button>
             <span className="text-slate-300">|</span>
             <button
@@ -761,13 +723,8 @@ function AppContent() {
               className="hover:text-slate-900 underline underline-offset-2 flex items-center gap-1"
             >
               <Database className="w-3.5 h-3.5" />
-              Backup & Restore
+              Backup &amp; GitHub Save
             </button>
-            <span className="text-slate-300">|</span>
-            <span className="flex items-center gap-1 text-emerald-700">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              100% Private (IndexedDB)
-            </span>
           </div>
         </div>
       </footer>

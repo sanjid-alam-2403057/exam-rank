@@ -58,7 +58,7 @@ export function calculateStudentRanks(
     // Percentile rank: percentage of students at or below this student's score
     // Standard definition: ((students with lower score + 0.5 * students with same score) / total) * 100
     // Or simplified: ((total - rank + 1) / total) * 100
-    const percentile = Number((((total - currentRank + 1) / total) * 100).toFixed(1));
+    const percentile = Number((((total - currentRank + 1) / total) * 100).toFixed(2));
 
     result.push({
       student: scored[i].student,

@@ -61,14 +61,9 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm tracking-wider shadow-sm">
             ER
           </div>
-          <div className="flex flex-col">
-            <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900 whitespace-nowrap">
-              EXAMINEX RANK
-            </span>
-            <span className="text-[10px] text-slate-500 font-medium hidden sm:inline">
-              Personal Offline Grade & Rank Analyzer
-            </span>
-          </div>
+          <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900 whitespace-nowrap">
+            EXAMINEX RANK
+          </span>
         </div>
 
         {/* Zone 2: Navigation Links */}

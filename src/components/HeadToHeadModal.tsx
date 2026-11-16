@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { AssessmentScheme, HeadToHeadReport, StudentRecord } from '../types';
 import { calculateHeadToHead } from '../algorithms/comparisonAnalytics';
+import { fmt2 } from '../utils/format';
 import {
   ResponsiveContainer,
   LineChart,
@@ -77,20 +78,34 @@ export const HeadToHeadModal: React.FC<HeadToHeadModalProps> = ({
     return st.roll || 'N/A';
   };
 
+  // CT Max Marks for dynamic YAxis
+  const ctMaxMark = useMemo(() => {
+    const ctComp = scheme.components.find((c) => c.type === 'best_n_of_m');
+    const subs = ctComp?.subComponents || [];
+    if (subs.length === 0) return 20;
+    return Math.max(...subs.map((s) => s.maxMarks || 20), 20);
+  }, [scheme]);
+
   // CT Line Chart Data
   const ctChartData = useMemo(() => {
     const ctComp = scheme.components.find((c) => c.type === 'best_n_of_m');
     const subs = ctComp?.subComponents || [];
 
     return subs.map((sub) => {
-      const meScore = me.marks[sub.id] ?? null;
-      const theirScore = selectedOpponent.marks[sub.id] ?? null;
+      const meScore =
+        me.marks[sub.id] !== null && me.marks[sub.id] !== undefined
+          ? Number(Number(me.marks[sub.id]).toFixed(2))
+          : null;
+      const theirScore =
+        selectedOpponent.marks[sub.id] !== null && selectedOpponent.marks[sub.id] !== undefined
+          ? Number(Number(selectedOpponent.marks[sub.id]).toFixed(2))
+          : null;
 
       const allScores = students
         .map((s) => s.marks[sub.id])
         .filter((v): v is number => v !== null && v !== undefined && !isNaN(v));
       const classAvg =
-        allScores.length > 0 ? Number((allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1)) : null;
+        allScores.length > 0 ? Number((allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(2)) : null;
 
       return {
         name: sub.name,
@@ -230,8 +245,8 @@ export const HeadToHeadModal: React.FC<HeadToHeadModalProps> = ({
                     <td className="py-2.5 px-3 font-sans font-medium text-slate-800">
                       {row.name}
                     </td>
-                    <td className="py-2.5 px-3 font-bold text-slate-900">{row.myScore}</td>
-                    <td className="py-2.5 px-3 font-bold text-slate-900">{row.theirScore}</td>
+                    <td className="py-2.5 px-3 font-bold text-slate-900">{fmt2(row.myScore)}</td>
+                    <td className="py-2.5 px-3 font-bold text-slate-900">{fmt2(row.theirScore)}</td>
                     <td className="py-2.5 px-3">
                       <span
                         className={`font-bold ${
@@ -242,7 +257,7 @@ export const HeadToHeadModal: React.FC<HeadToHeadModalProps> = ({
                             : 'text-slate-500'
                         }`}
                       >
-                        {row.gap > 0 ? `+${row.gap} (Me)` : row.gap < 0 ? `${row.gap} (Them)` : 'Tied'}
+                        {row.gap > 0 ? `+${fmt2(row.gap)} (Me)` : row.gap < 0 ? `${fmt2(row.gap)} (Them)` : 'Tied'}
                       </span>
                     </td>
                     <td className="py-2.5 px-3 font-sans">
@@ -268,9 +283,9 @@ export const HeadToHeadModal: React.FC<HeadToHeadModalProps> = ({
 
               {/* Total Summary Row */}
               <tr className="bg-slate-50 font-bold border-t-2 border-slate-300">
-                <td className="py-3 px-3 font-sans text-slate-900">Current Sessional Total</td>
-                <td className="py-3 px-3 text-indigo-700 text-sm">{report.myTotal}</td>
-                <td className="py-3 px-3 text-slate-800 text-sm">{report.theirTotal}</td>
+                <td className="py-3 px-3 font-sans text-slate-900">Sessional Total</td>
+                <td className="py-3 px-3 text-indigo-700 text-sm">{fmt2(report.myTotal)}</td>
+                <td className="py-3 px-3 text-slate-800 text-sm">{fmt2(report.theirTotal)}</td>
                 <td className="py-3 px-3">
                   <span
                     className={`text-sm ${
@@ -282,17 +297,17 @@ export const HeadToHeadModal: React.FC<HeadToHeadModalProps> = ({
                     }`}
                   >
                     {report.overallGap > 0
-                      ? `+${report.overallGap} (Me)`
+                      ? `+${fmt2(report.overallGap)} (Me)`
                       : report.overallGap < 0
-                      ? `${report.overallGap} (Them)`
+                      ? `${fmt2(report.overallGap)} (Them)`
                       : 'Tied'}
                   </span>
                 </td>
                 <td className="py-3 px-3 font-sans">
                   {report.whoIsAhead === 'me'
-                    ? 'You are Ahead'
+                    ? 'You Lead'
                     : report.whoIsAhead === 'them'
-                    ? 'They are Ahead'
+                    ? 'They Lead'
                     : 'Tied'}
                 </td>
               </tr>
@@ -327,8 +342,8 @@ export const HeadToHeadModal: React.FC<HeadToHeadModalProps> = ({
               <LineChart data={ctChartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="#64748B" />
-                <YAxis domain={[0, 20]} tick={{ fontSize: 10 }} stroke="#64748B" />
-                <Tooltip />
+                <YAxis domain={[0, ctMaxMark]} tick={{ fontSize: 10 }} stroke="#64748B" />
+                <Tooltip formatter={(val: any) => fmt2(Number(val))} />
                 <Legend wrapperStyle={{ fontSize: '11px' }} />
                 <Line type="monotone" dataKey="Me" stroke="#4F46E5" strokeWidth={2.5} connectNulls />
                 <Line

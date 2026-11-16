@@ -72,11 +72,11 @@ export interface ComponentBreakdown {
 export interface GradeTargetResult {
   grade: string;
   minMarks: number;
-  neededInFinal: number;
-  finalPercentage: number;
+  neededInFinal: number | null;
+  finalPercentage: number | null;
   isReachable: boolean;
   isAlreadySecured: boolean;
-  difficulty: 'secured' | 'easy' | 'moderate' | 'challenging' | 'critical' | 'unreachable';
+  difficulty: 'incomplete' | 'secured' | 'easy' | 'moderate' | 'challenging' | 'critical' | 'unreachable';
 }
 
 export interface TargetCalculation {
@@ -86,11 +86,13 @@ export interface TargetCalculation {
   finalWeight: number;
   targetTotalMarks: number;
   targetGradeName: string;
-  neededInFinal: number;
-  neededPercentage: number;
-  verdict: 'secured' | 'reachable' | 'unreachable';
+  isTargetPrerequisitesMet: boolean;
+  missingPrerequisiteReasons: string[];
+  neededInFinal: number | null;
+  neededPercentage: number | null;
+  verdict: 'incomplete' | 'secured' | 'reachable' | 'unreachable';
   verdictMessage: string;
-  difficulty: 'secured' | 'easy' | 'moderate' | 'challenging' | 'critical' | 'unreachable';
+  difficulty: 'incomplete' | 'secured' | 'easy' | 'moderate' | 'challenging' | 'critical' | 'unreachable';
   bestCaseSessional: number; // If all untaken non-final get 100%
   worstCaseSessional: number; // If all untaken non-final get 0%
   bestCaseFinalNeeded: number;

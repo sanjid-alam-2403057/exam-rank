@@ -27,7 +27,7 @@ export const CompletenessStrip: React.FC<CompletenessStripProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono">
-            Completeness Detector:
+            Published:
           </span>
           {/* Component status pills */}
           <div className="flex flex-wrap items-center gap-1.5">
@@ -37,7 +37,7 @@ export const CompletenessStrip: React.FC<CompletenessStripProps> = ({
               return (
                 <span
                   key={c.id}
-                  title={`${c.name}: ${c.publishedCount}/${c.totalStudents} students (${c.publishedPct}%)`}
+                  title={`${c.name}: ${c.publishedCount}/${c.totalStudents} (${c.publishedPct.toFixed(2)}%)`}
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium border ${
                     isAll
                       ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
@@ -59,7 +59,7 @@ export const CompletenessStrip: React.FC<CompletenessStripProps> = ({
         {/* Fair Comparison Toggle */}
         <div className="flex items-center gap-3 shrink-0">
           <label className="flex items-center gap-2 cursor-pointer text-xs select-none">
-            <span className="text-slate-600 font-medium">Fair-Comparison Mode:</span>
+            <span className="text-slate-600 font-medium">Fair Mode:</span>
             <input
               type="checkbox"
               checked={fairComparisonMode}
@@ -71,7 +71,7 @@ export const CompletenessStrip: React.FC<CompletenessStripProps> = ({
                 fairComparisonMode ? 'text-indigo-600' : 'text-slate-400'
               }`}
             >
-              {fairComparisonMode ? 'ON (Default)' : 'OFF'}
+              {fairComparisonMode ? 'ON' : 'OFF'}
             </span>
           </label>
 
@@ -80,46 +80,19 @@ export const CompletenessStrip: React.FC<CompletenessStripProps> = ({
             className="flex items-center gap-1 text-[11px] font-medium text-slate-600 hover:text-indigo-600 border border-slate-200 px-2 py-1 rounded-md transition-colors"
           >
             <Sliders className="w-3 h-3" />
-            <span>Unpublished Expectations</span>
+            <span>Expectations</span>
             {showExpectationEditor ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
         </div>
       </div>
 
-      {/* Fair Comparison Active Description Banner */}
-      {fairComparisonMode ? (
-        <div className="p-2.5 bg-indigo-50/70 border border-indigo-200 rounded-lg text-xs text-indigo-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Info className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-            <span>
-              <strong>Fair-Comparison Active:</strong> {completeness.fairComparingLabel}. Students are currently ranked only on the results available for all of us.
-            </span>
-          </div>
-          <span className="text-[11px] font-mono text-indigo-700 font-semibold shrink-0">
-            {completeness.fairMarksAvailable} / {completeness.totalCourseMarks} marks evaluated
-          </span>
-        </div>
-      ) : (
-        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 flex items-center gap-2">
-          <AlertCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          <span>
-            Standard Mode: Ranking by total earned marks including components published for some students.
-          </span>
-        </div>
-      )}
-
       {/* Unpublished Performance Expectation Overrides Drawer */}
       {showExpectationEditor && (
         <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200 space-y-3 animate-in fade-in">
           <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <span className="text-xs font-bold text-slate-900 block">
-                Expected Performance for Unpublished Components
-              </span>
-              <p className="text-[11px] text-slate-500">
-                Default: Your own published percentage blended with class average (weight = k / (k+2)). Override manually to test expectations:
-              </p>
-            </div>
+            <span className="text-xs font-bold text-slate-900 block">
+              Expected Marks for Unpublished Components
+            </span>
             {Object.keys(manualExpectations).length > 0 && (
               <button
                 onClick={onResetManualExpectations}

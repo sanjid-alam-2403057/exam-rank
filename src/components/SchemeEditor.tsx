@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AssessmentScheme, GradeThreshold, SchemeComponent, SubComponent } from '../types';
 import { DEFAULT_ASSESSMENT_SCHEME, DEFAULT_GRADE_THRESHOLDS } from '../data/defaultScheme';
+import { fmt2 } from '../utils/format';
 import { Plus, Trash2, RotateCcw, AlertTriangle, CheckCircle, Sliders } from 'lucide-react';
 import { useFeedback } from './FeedbackSystem';
 
@@ -136,11 +137,8 @@ export const SchemeEditor: React.FC<SchemeEditorProps> = ({ scheme, onUpdateSche
               </span>
             </div>
             <h1 className="text-xl font-bold text-slate-900 mt-1">
-              Assessment Scheme & Weight Distribution
+              Assessment Scheme & Weights
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Customize course components, weights, &quot;best N of M&quot; class test rules, and target thresholds.
-            </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -513,7 +511,7 @@ export const SchemeEditor: React.FC<SchemeEditorProps> = ({ scheme, onUpdateSche
                       />
                     </td>
                     <td className="py-2.5 px-3 font-mono text-slate-600">
-                      {((gt.minMarks / scheme.totalMarks) * 100).toFixed(1)}%
+                      {fmt2((gt.minMarks / scheme.totalMarks) * 100)}%
                     </td>
                     <td className="py-2.5 px-3">
                       {gt.grade === scheme.targetGradeName ? (

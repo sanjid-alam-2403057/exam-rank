@@ -1,17 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { AssessmentScheme, StudentRecord, TargetCalculation } from '../types';
 import { calculateStudentTarget } from '../algorithms/targetCalculator';
+import { fmt2 } from '../utils/format';
 import {
   Trophy,
   Target,
   Sliders,
   CheckCircle2,
-  AlertTriangle,
   XCircle,
-  HelpCircle,
   TrendingUp,
-  Sparkles,
-  ArrowRight,
   Info,
   RotateCcw,
 } from 'lucide-react';
@@ -138,12 +135,19 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
           label: 'High Pressure (90% – 100%)',
           accent: 'orange',
         };
+      case 'incomplete':
+        return {
+          bg: 'bg-slate-100 text-slate-700 border-slate-300',
+          indicator: 'bg-slate-500',
+          label: 'Waiting for Sessional Marks',
+          accent: 'slate',
+        };
       case 'unreachable':
       default:
         return {
           bg: 'bg-rose-500/10 text-rose-800 border-rose-300',
           indicator: 'bg-rose-600',
-          label: 'Mathematically Unreachable (> 100%)',
+          label: 'Not Reachable',
           accent: 'rose',
         };
     }
@@ -166,10 +170,10 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
             </span>
           </div>
           <h1 className="text-xl font-bold text-slate-900 mt-1">
-            Semester Final A+ Target Requirement
+            Semester Final {scheme.targetGradeName} Target
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Target: <strong className="text-slate-800">{scheme.targetGradeThreshold} marks</strong> for {scheme.targetGradeName} grade out of {scheme.totalMarks} total marks.
+            Target: <strong className="text-slate-800">{fmt2(scheme.targetGradeThreshold)}</strong> / {fmt2(scheme.totalMarks)} marks
           </p>
         </div>
 
@@ -204,6 +208,8 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
               ? 'bg-emerald-500'
               : targetCalc.verdict === 'unreachable'
               ? 'bg-rose-500'
+              : targetCalc.verdict === 'incomplete'
+              ? 'bg-slate-400'
               : 'bg-indigo-600'
           }`}
         />
@@ -221,54 +227,71 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
 
               {hasActiveOverrides && (
                 <span className="text-xs font-mono font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
-                  What-If Simulation Active
+                  What-If Active
                 </span>
               )}
             </div>
 
             <div>
-              {targetCalc.verdict === 'secured' ? (
+              {targetCalc.verdict === 'incomplete' ? (
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Required in Final Exam ({fmt2(targetCalc.finalWeight)} max)
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-400 tracking-tight mt-1 font-mono">
+                    —
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Blank until at least 3 CTs, Assignment, and Attendance marks are entered.
+                  </p>
+                  {targetCalc.missingPrerequisiteReasons.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {targetCalc.missingPrerequisiteReasons.map((r, i) => (
+                        <span
+                          key={i}
+                          className="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200"
+                        >
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : targetCalc.verdict === 'secured' ? (
                 <div>
                   <h2 className="text-2xl sm:text-3xl font-extrabold text-emerald-950 tracking-tight flex items-center gap-2">
                     <Trophy className="w-8 h-8 text-emerald-600 shrink-0" />
-                    <span>Grade {scheme.targetGradeName} Already Secured!</span>
+                    <span>{scheme.targetGradeName} Secured</span>
                   </h2>
                   <p className="text-sm text-slate-600 mt-2">
-                    Your current sessional marks alone total{' '}
-                    <strong className="text-slate-900 font-mono">{targetCalc.sessionalTotalEarned}</strong> marks,
-                    which meets or exceeds the {targetCalc.targetTotalMarks}-mark cutoff. You do not strictly need any final exam marks to attain this grade.
+                    Sessional earned: <strong className="text-slate-900 font-mono">{fmt2(targetCalc.sessionalTotalEarned)}</strong> / {fmt2(targetCalc.targetTotalMarks)}.
                   </p>
                 </div>
               ) : targetCalc.verdict === 'reachable' ? (
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Required in Final Exam ({targetCalc.finalWeight} marks available)
+                    Required in Final Exam ({fmt2(targetCalc.finalWeight)} max)
                   </div>
                   <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-1 font-mono">
-                    <span className="text-indigo-600">{targetCalc.neededInFinal}</span>
-                    <span className="text-slate-400 text-2xl font-normal"> / {targetCalc.finalWeight}</span>
+                    <span className="text-indigo-600">{fmt2(targetCalc.neededInFinal)}</span>
+                    <span className="text-slate-400 text-2xl font-normal"> / {fmt2(targetCalc.finalWeight)}</span>
                     <span className="text-lg font-medium text-slate-600 ml-3">
-                      ({targetCalc.neededPercentage}%)
+                      ({fmt2(targetCalc.neededPercentage)}%)
                     </span>
                   </h2>
-                  <p className="text-sm text-slate-600 mt-2">
-                    To achieve an <strong className="text-slate-900">{targetCalc.targetGradeName}</strong> ({targetCalc.targetTotalMarks} total marks),
-                    you need at least <strong className="text-indigo-700 font-mono">{targetCalc.neededInFinal}</strong> marks in the semester final.
-                  </p>
                 </div>
               ) : (
                 <div>
                   <h2 className="text-2xl sm:text-3xl font-extrabold text-rose-950 tracking-tight flex items-center gap-2">
                     <XCircle className="w-8 h-8 text-rose-600 shrink-0" />
-                    <span>Not Mathematically Reachable</span>
+                    <span>Not Reachable (Max {fmt2(targetCalc.finalWeight)})</span>
                   </h2>
                   <p className="text-sm text-slate-600 mt-2">
-                    With your current sessional total of{' '}
-                    <strong className="text-slate-900 font-mono">{targetCalc.sessionalTotalEarned}</strong>, even scoring full marks (
-                    <strong className="text-slate-900 font-mono">{targetCalc.finalWeight}/{targetCalc.finalWeight}</strong>) in the final yields{' '}
+                    Sessional <strong className="text-slate-900 font-mono">{fmt2(targetCalc.sessionalTotalEarned)}</strong> + max final{' '}
+                    <strong className="text-slate-900 font-mono">{fmt2(targetCalc.finalWeight)}</strong> ={' '}
                     <strong className="text-slate-900 font-mono">
-                      {(targetCalc.sessionalTotalEarned + targetCalc.finalWeight).toFixed(2)}
-                    </strong> marks, which falls short of {targetCalc.targetTotalMarks}. See lower grades in the table below.
+                      {fmt2(targetCalc.sessionalTotalEarned + targetCalc.finalWeight)}
+                    </strong> (&lt; {fmt2(targetCalc.targetTotalMarks)}).
                   </p>
                 </div>
               )}
@@ -280,27 +303,27 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
             <div className="p-3 bg-white rounded-lg border border-slate-200">
               <span className="text-[11px] font-medium text-slate-500 block">Sessional Earned</span>
               <span className="text-xl font-bold font-mono text-slate-900 tabular-nums">
-                {targetCalc.sessionalTotalEarned}
+                {fmt2(targetCalc.sessionalTotalEarned)}
               </span>
               <span className="text-[11px] text-slate-400 font-mono block">
-                / {targetCalc.sessionalWeightTotal} max
+                / {fmt2(targetCalc.sessionalWeightTotal)}
               </span>
             </div>
 
             <div className="p-3 bg-white rounded-lg border border-slate-200">
-              <span className="text-[11px] font-medium text-slate-500 block">Final Exam Weight</span>
+              <span className="text-[11px] font-medium text-slate-500 block">Final Weight</span>
               <span className="text-xl font-bold font-mono text-indigo-700 tabular-nums">
-                {targetCalc.finalWeight}
+                {fmt2(targetCalc.finalWeight)}
               </span>
               <span className="text-[11px] text-slate-400 font-mono block">
-                {((targetCalc.finalWeight / scheme.totalMarks) * 100).toFixed(0)}% of Course
+                {fmt2((targetCalc.finalWeight / scheme.totalMarks) * 100)}%
               </span>
             </div>
 
             <div className="p-3 bg-white rounded-lg border border-slate-200">
-              <span className="text-[11px] font-medium text-slate-500 block">Target Threshold</span>
+              <span className="text-[11px] font-medium text-slate-500 block">Target Cutoff</span>
               <span className="text-xl font-bold font-mono text-slate-900 tabular-nums">
-                {targetCalc.targetTotalMarks}
+                {fmt2(targetCalc.targetTotalMarks)}
               </span>
               <span className="text-[11px] text-slate-400 font-mono block">
                 Grade: {targetCalc.targetGradeName}
@@ -308,12 +331,12 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
             </div>
 
             <div className="p-3 bg-white rounded-lg border border-slate-200">
-              <span className="text-[11px] font-medium text-slate-500 block">Sessional % Achieved</span>
+              <span className="text-[11px] font-medium text-slate-500 block">Sessional %</span>
               <span className="text-xl font-bold font-mono text-slate-900 tabular-nums">
-                {((targetCalc.sessionalTotalEarned / targetCalc.sessionalWeightTotal) * 100).toFixed(1)}%
+                {fmt2((targetCalc.sessionalTotalEarned / targetCalc.sessionalWeightTotal) * 100)}%
               </span>
               <span className="text-[11px] text-slate-400 font-mono block">
-                of sessional points
+                Achieved
               </span>
             </div>
           </div>
@@ -323,12 +346,15 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
         {hasActiveOverrides && (
           <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-indigo-900 bg-indigo-50/70 p-3 rounded-lg">
             <span>
-              <strong>What-If Effect:</strong> Baseline final needed was{' '}
-              <span className="font-mono font-semibold">{baselineCalc.neededInFinal}</span> marks.
-              With your simulated scores, it is now{' '}
-              <span className="font-mono font-bold text-indigo-700">{targetCalc.neededInFinal}</span> marks{' '}
-              ({(targetCalc.neededInFinal - baselineCalc.neededInFinal > 0 ? '+' : '')}
-              {(targetCalc.neededInFinal - baselineCalc.neededInFinal).toFixed(2)} marks difference).
+              <strong>What-If:</strong> Baseline{' '}
+              <span className="font-mono font-semibold">{fmt2(baselineCalc.neededInFinal)}</span> → Simulated{' '}
+              <span className="font-mono font-bold text-indigo-700">{fmt2(targetCalc.neededInFinal)}</span>
+              {baselineCalc.neededInFinal !== null && targetCalc.neededInFinal !== null && (
+                <>
+                  {' '}({targetCalc.neededInFinal - baselineCalc.neededInFinal > 0 ? '+' : ''}
+                  {fmt2(targetCalc.neededInFinal - baselineCalc.neededInFinal)})
+                </>
+              )}
             </span>
 
             <button
@@ -347,14 +373,9 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
         {/* Left: Component Breakdown (8 cols) */}
         <div className="lg:col-span-8 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Component-by-Component Performance
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Exact marks earned so far, scaled to weights. Untaken tests marked accordingly.
-              </p>
-            </div>
+            <h2 className="text-base font-bold text-slate-900">
+              Component Breakdown
+            </h2>
           </div>
 
           <div className="space-y-3">
@@ -367,17 +388,17 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
                   <div>
                     <span className="text-sm font-bold text-slate-900">{breakdown.name}</span>
                     <span className="text-xs text-slate-500 font-mono ml-2">
-                      ({breakdown.weight} marks weight)
+                      ({fmt2(breakdown.weight)} max)
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500">Earned so far:</span>
+                    <span className="text-xs text-slate-500">Earned:</span>
                     <span className="text-sm font-bold font-mono text-slate-900 tabular-nums">
-                      {breakdown.earnedScaledMarks} / {breakdown.weight}
+                      {fmt2(breakdown.earnedScaledMarks)} / {fmt2(breakdown.weight)}
                     </span>
                     <span className="text-xs font-mono text-slate-500">
-                      ({((breakdown.earnedScaledMarks / breakdown.weight) * 100).toFixed(1)}%)
+                      ({fmt2((breakdown.earnedScaledMarks / breakdown.weight) * 100)}%)
                     </span>
                   </div>
                 </div>
@@ -400,7 +421,7 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
                         >
                           <span>{sub.name}:</span>
                           <span className="font-mono font-bold">
-                            {isTaken ? `${sub.rawScore}/${sub.maxScore}` : 'Untaken'}
+                            {isTaken ? `${fmt2(sub.rawScore)}/${fmt2(sub.maxScore)}` : 'Untaken'}
                           </span>
                           {isTaken && sub.usedInBestN && (
                             <span className="text-[10px] text-emerald-700 bg-emerald-100/70 px-1 rounded font-sans no-underline">
@@ -432,32 +453,25 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-indigo-600" />
-              <span>Projections for Untaken Tests</span>
+              <span>Bounds for Untaken Tests</span>
             </h2>
-            <p className="text-xs text-slate-500">
-              Mathematical bounds if some sessional tests remain pending before the final exam.
-            </p>
 
             {/* Best Case Card */}
             <div className="p-3.5 rounded-lg border border-emerald-200 bg-emerald-50/50 space-y-1.5">
               <div className="flex items-center justify-between text-xs font-semibold text-emerald-900">
-                <span>Best-Case Scenario</span>
-                <span className="font-mono text-emerald-700">Untaken = 100%</span>
+                <span>Best-Case (Untaken = 100%)</span>
               </div>
-              <p className="text-[11px] text-emerald-800">
-                If you score full marks in all remaining tests:
-              </p>
               <div className="pt-1 flex items-baseline justify-between text-xs">
-                <span className="text-slate-600">Sessional Total:</span>
+                <span className="text-slate-600">Sessional:</span>
                 <span className="font-mono font-bold text-slate-900">
-                  {targetCalc.bestCaseSessional} / {targetCalc.sessionalWeightTotal}
+                  {fmt2(targetCalc.bestCaseSessional)} / {fmt2(targetCalc.sessionalWeightTotal)}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-xs">
                 <span className="text-slate-600">Final Needed:</span>
                 <span className="font-mono font-bold text-emerald-700">
-                  {targetCalc.bestCaseFinalNeeded} / {targetCalc.finalWeight} (
-                  {((targetCalc.bestCaseFinalNeeded / targetCalc.finalWeight) * 100).toFixed(1)}%)
+                  {fmt2(targetCalc.bestCaseFinalNeeded)} / {fmt2(targetCalc.finalWeight)} (
+                  {fmt2((targetCalc.bestCaseFinalNeeded / targetCalc.finalWeight) * 100)}%)
                 </span>
               </div>
             </div>
@@ -465,23 +479,19 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
             {/* Worst Case Card */}
             <div className="p-3.5 rounded-lg border border-amber-200 bg-amber-50/50 space-y-1.5">
               <div className="flex items-center justify-between text-xs font-semibold text-amber-900">
-                <span>Worst-Case Scenario</span>
-                <span className="font-mono text-amber-700">Untaken = 0%</span>
+                <span>Worst-Case (Untaken = 0%)</span>
               </div>
-              <p className="text-[11px] text-amber-800">
-                If remaining untaken tests score 0 marks:
-              </p>
               <div className="pt-1 flex items-baseline justify-between text-xs">
-                <span className="text-slate-600">Sessional Total:</span>
+                <span className="text-slate-600">Sessional:</span>
                 <span className="font-mono font-bold text-slate-900">
-                  {targetCalc.worstCaseSessional} / {targetCalc.sessionalWeightTotal}
+                  {fmt2(targetCalc.worstCaseSessional)} / {fmt2(targetCalc.sessionalWeightTotal)}
                 </span>
               </div>
               <div className="flex items-baseline justify-between text-xs">
                 <span className="text-slate-600">Final Needed:</span>
                 <span className="font-mono font-bold text-amber-800">
-                  {targetCalc.worstCaseFinalNeeded} / {targetCalc.finalWeight} (
-                  {((targetCalc.worstCaseFinalNeeded / targetCalc.finalWeight) * 100).toFixed(1)}%)
+                  {fmt2(targetCalc.worstCaseFinalNeeded)} / {fmt2(targetCalc.finalWeight)} (
+                  {fmt2((targetCalc.worstCaseFinalNeeded / targetCalc.finalWeight) * 100)}%)
                 </span>
               </div>
             </div>
@@ -520,7 +530,7 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
                         <div className="flex justify-between text-xs">
                           <span className="font-medium text-slate-700">{comp.name}</span>
                           <span className="font-mono font-bold text-indigo-700">
-                            {currentVal} / {max}
+                            {fmt2(currentVal)} / {fmt2(max)}
                           </span>
                         </div>
                         <input
@@ -538,7 +548,7 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
                     return (
                       <div key={comp.id} className="space-y-2 pt-1 border-t border-indigo-100">
                         <span className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider block">
-                          {comp.name} Sub-Tests
+                          {comp.name}
                         </span>
                         {comp.subComponents.map((sub) => {
                           const currentVal = whatIfOverrides[sub.id] ?? activeStudent.marks[sub.id] ?? 0;
@@ -547,7 +557,7 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
                               <div className="flex justify-between text-xs">
                                 <span className="text-slate-600">{sub.name}</span>
                                 <span className="font-mono font-bold text-indigo-700">
-                                  {currentVal} / {sub.maxMarks}
+                                  {fmt2(currentVal)} / {fmt2(sub.maxMarks)}
                                 </span>
                               </div>
                               <input
@@ -576,11 +586,8 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
       <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
         <div>
           <h2 className="text-base font-bold text-slate-900">
-            Target Requirements for All Letter Grades
+            All Grade Targets
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Compare final exam marks needed across every grade boundary based on your current sessional score ({targetCalc.sessionalTotalEarned}).
-          </p>
         </div>
 
         <div className="overflow-x-auto">
@@ -591,12 +598,13 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
                 <th className="py-2.5 px-4">Threshold</th>
                 <th className="py-2.5 px-4">Final Marks Needed</th>
                 <th className="py-2.5 px-4">Final % Needed</th>
-                <th className="py-2.5 px-4">Attainability Status</th>
+                <th className="py-2.5 px-4">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {targetCalc.allGradeTargets.map((gt) => {
                 const isCurrentTarget = gt.grade === scheme.targetGradeName;
+                const isIncomplete = gt.difficulty === 'incomplete' || gt.neededInFinal === null;
                 return (
                   <tr
                     key={gt.grade}
@@ -610,31 +618,39 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
                       </span>
                       {isCurrentTarget && (
                         <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-100/70 px-1.5 py-0.5 rounded">
-                          Current Goal
+                          Goal
                         </span>
                       )}
                     </td>
                     <td className="py-3 px-4 font-mono font-medium text-slate-700">
-                      {gt.minMarks} / {scheme.totalMarks}
+                      {fmt2(gt.minMarks)} / {fmt2(scheme.totalMarks)}
                     </td>
                     <td className="py-3 px-4 font-mono font-bold text-slate-900 tabular-nums">
-                      {gt.isAlreadySecured ? (
-                        <span className="text-emerald-700 font-sans font-semibold">0 (Already Secured)</span>
+                      {isIncomplete ? (
+                        <span className="text-slate-400">—</span>
+                      ) : gt.isAlreadySecured ? (
+                        <span className="text-emerald-700 font-sans font-semibold">0.00 (Secured)</span>
                       ) : gt.isReachable ? (
-                        `${gt.neededInFinal} / ${targetCalc.finalWeight}`
+                        `${fmt2(gt.neededInFinal)} / ${fmt2(targetCalc.finalWeight)}`
                       ) : (
-                        <span className="text-rose-600 font-sans">Unreachable ({gt.neededInFinal})</span>
+                        <span className="text-rose-600 font-sans">—</span>
                       )}
                     </td>
                     <td className="py-3 px-4 font-mono text-slate-600 tabular-nums">
-                      {gt.isAlreadySecured
-                        ? '0.0%'
+                      {isIncomplete
+                        ? '—'
+                        : gt.isAlreadySecured
+                        ? '0.00%'
                         : gt.isReachable
-                        ? `${gt.finalPercentage}%`
-                        : `${gt.finalPercentage}% (Exceeds 100%)`}
+                        ? `${fmt2(gt.finalPercentage)}%`
+                        : '—'}
                     </td>
                     <td className="py-3 px-4">
-                      {gt.isAlreadySecured ? (
+                      {isIncomplete ? (
+                        <span className="text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-[11px] font-medium">
+                          Waiting
+                        </span>
+                      ) : gt.isAlreadySecured ? (
                         <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-semibold inline-flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" /> Secured
                         </span>
@@ -650,11 +666,11 @@ export const TargetCalculatorView: React.FC<TargetCalculatorViewProps> = ({
                               : 'bg-orange-50 text-orange-800 border border-orange-200'
                           }`}
                         >
-                          {gt.difficulty.toUpperCase()} ({gt.finalPercentage}%)
+                          {gt.difficulty.toUpperCase()} ({fmt2(gt.finalPercentage)}%)
                         </span>
                       ) : (
                         <span className="text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded text-[11px] font-medium inline-flex items-center gap-1">
-                          <XCircle className="w-3 h-3" /> Out of Reach
+                          <XCircle className="w-3 h-3" /> Unreachable
                         </span>
                       )}
                     </td>

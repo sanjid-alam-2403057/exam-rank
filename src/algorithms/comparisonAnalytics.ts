@@ -217,7 +217,7 @@ export function detectCompleteness(
         status,
         publishedCount,
         totalStudents,
-        publishedPct: Number(pct.toFixed(1)),
+        publishedPct: Number(pct.toFixed(2)),
       });
     } else if (comp.type === 'best_n_of_m' && comp.subComponents) {
       // Sub-tests (e.g. CT1, CT2, CT3, CT4)
@@ -243,7 +243,7 @@ export function detectCompleteness(
           status,
           publishedCount,
           totalStudents,
-          publishedPct: Number(pct.toFixed(1)),
+          publishedPct: Number(pct.toFixed(2)),
           isSubComponent: true,
           parentId: comp.id,
         });
@@ -283,7 +283,7 @@ export function detectCompleteness(
       status,
       publishedCount,
       totalStudents,
-      publishedPct: Number(pct.toFixed(1)),
+      publishedPct: Number(pct.toFixed(2)),
     });
   }
 
@@ -359,7 +359,7 @@ export function calculateFairScore(
   return {
     earned: Number(earned.toFixed(2)),
     totalAvailable: Number(totalAvailable.toFixed(2)),
-    percentage: Number(percentage.toFixed(1)),
+    percentage: Number(percentage.toFixed(2)),
   };
 }
 
@@ -528,21 +528,21 @@ export function calculateHeadToHead(
   const canIOvertakeThemPossible = myMaxPossible >= theirTotal;
   const neededInFinalLikely = Math.max(
     0,
-    Number((theirTotal - myTotal + (theirCalc.finalWeight * 0.75)).toFixed(1))
+    Number((theirTotal - myTotal + (theirCalc.finalWeight * 0.75)).toFixed(2))
   );
-  const neededInFinalBest = Math.max(0, Number((theirCalc.worstCaseSessional - myTotal).toFixed(1)));
+  const neededInFinalBest = Math.max(0, Number((theirCalc.worstCaseSessional - myTotal).toFixed(2)));
 
   const canTheyOvertakeMePossible = theirMaxPossible >= myTotal;
 
   // Plain-English summary
   let summary = '';
   if (whoIsAhead === 'them') {
-    const leadMarks = Math.abs(overallGap);
-    summary = `${them.name} leads you by ${leadMarks} marks, mostly in ${theirBiggestLead ? `${theirBiggestLead.name} (+${theirBiggestLead.gap})` : 'sessional tests'}. You can overtake them if you score ${Math.max(1, leadMarks + 1)} more than them in the remaining exams.`;
+    const leadMarks = Math.abs(overallGap).toFixed(2);
+    summary = `${them.name} leads by ${leadMarks} marks (${theirBiggestLead ? `${theirBiggestLead.name} +${theirBiggestLead.gap.toFixed(2)}` : 'sessional'}).`;
   } else if (whoIsAhead === 'me') {
-    summary = `You lead ${them.name} by ${overallGap} marks, with your biggest advantage in ${myBiggestLead ? `${myBiggestLead.name} (+${myBiggestLead.gap})` : 'sessional tests'}. Maintain your pace in the final exam to defend your rank #${myRank}.`;
+    summary = `You lead ${them.name} by ${overallGap.toFixed(2)} marks (${myBiggestLead ? `${myBiggestLead.name} +${myBiggestLead.gap.toFixed(2)}` : 'sessional'}).`;
   } else {
-    summary = `You and ${them.name} are exactly tied with ${myTotal} marks! The remaining tests and final exam will decide who finishes ahead.`;
+    summary = `Tied with ${them.name} at ${myTotal.toFixed(2)} marks.`;
   }
 
   return {
@@ -563,16 +563,16 @@ export function calculateHeadToHead(
       neededInFinalLikely,
       neededInFinalBest,
       summary: canIOvertakeThemPossible
-        ? `You need ${neededInFinalLikely} marks in the final if they score their likely average.`
-        : 'Mathematically uncatchable even with full marks.',
+        ? `Need ${neededInFinalLikely.toFixed(2)} in final if they score their likely average.`
+        : 'Mathematically uncatchable.',
     },
     canTheyOvertakeMe: {
       possible: canTheyOvertakeMePossible,
-      neededInFinalLikely: Math.max(0, Number((myTotal - theirTotal + 5).toFixed(1))),
+      neededInFinalLikely: Math.max(0, Number((myTotal - theirTotal + 5).toFixed(2))),
       neededInFinalBest: 0,
       summary: canTheyOvertakeMePossible
-        ? `They can catch you if they outscore you by ${Math.abs(overallGap)} marks in the final.`
-        : 'They cannot catch you.',
+        ? `They need to outscore you by ${Math.abs(overallGap).toFixed(2)} marks in final.`
+        : 'Cannot catch you.',
     },
     plainEnglishSummary: summary,
   };
@@ -607,7 +607,7 @@ export function createCourseSnapshot(
     myRoll,
     myRank: me ? me.rank : 1,
     mySessional: me ? me.sessionalScore : 0,
-    neededFinalAPlus: targetCalc ? targetCalc.neededInFinal : 0,
+    neededFinalAPlus: targetCalc?.neededInFinal ?? 0,
     studentsCount: students.length,
     publishedCount: completeness.allPublishedCount + completeness.somePublishedCount,
   };
@@ -793,10 +793,26 @@ export function calculateCompetitorAnalysis(
     };
   };
 
-  const aboveSlice = ranked.slice(Math.max(0, myIndex - 5), myIndex);
-  const competitorsAbove = aboveSlice.map(buildComparisonItem).reverse();
+  const minTotalCompare = Math.min(10, Math.max(0, ranked.length - 1));
+  let aboveCount = Math.min(5, myIndex);
+  let belowCount = Math.min(5, Math.max(0, ranked.length - 1 - myIndex));
 
-  const belowSlice = ranked.slice(myIndex + 1, myIndex + 6);
+  if (aboveCount + belowCount < minTotalCompare) {
+    const needed = minTotalCompare - (aboveCount + belowCount);
+    const extraBelow = Math.min(needed, Math.max(0, ranked.length - 1 - myIndex - belowCount));
+    belowCount += extraBelow;
+  }
+
+  if (aboveCount + belowCount < minTotalCompare) {
+    const needed = minTotalCompare - (aboveCount + belowCount);
+    const extraAbove = Math.min(needed, myIndex - aboveCount);
+    aboveCount += extraAbove;
+  }
+
+  const aboveSlice = ranked.slice(myIndex - aboveCount, myIndex);
+  const competitorsAbove = aboveSlice.map(buildComparisonItem);
+
+  const belowSlice = ranked.slice(myIndex + 1, myIndex + 1 + belowCount);
   const competitorsBelow = belowSlice.map(buildComparisonItem);
 
   const allItems = ranked
@@ -928,7 +944,7 @@ export function calculateFinalPredictions(
 
     const rawPredictedPct = alpha + beta * mySessionalPct;
     const clampedPredictedPct = Math.max(0.1, Math.min(1.0, rawPredictedPct));
-    const likely = Number((clampedPredictedPct * finalWeight).toFixed(1));
+    const likely = Number((clampedPredictedPct * finalWeight).toFixed(2));
 
     let ssRes = 0;
     studentsWithFinal.forEach((item) => {
@@ -938,8 +954,8 @@ export function calculateFinalPredictions(
     const se = Math.sqrt(ssRes / (n > 2 ? n - 2 : 1));
     const margin = Math.max(2, se * finalWeight * 1.25);
 
-    const low = Number(Math.max(0, likely - margin).toFixed(1));
-    const high = Number(Math.min(finalWeight, likely + margin).toFixed(1));
+    const low = Number(Math.max(0, likely - margin).toFixed(2));
+    const high = Number(Math.min(finalWeight, likely + margin).toFixed(2));
 
     const confidence: PredictionResult['confidence'] = n >= 12 ? 'high' : 'medium';
 
@@ -956,7 +972,7 @@ export function calculateFinalPredictions(
     else if (neededForAPlus > finalWeight) probAPlus = 0;
     else {
       const z = (likely - neededForAPlus) / (margin || 1);
-      probAPlus = Number((Math.min(100, Math.max(0, (0.5 * (1 + Math.tanh(z * 0.797885))) * 100))).toFixed(1));
+      probAPlus = Number((Math.min(100, Math.max(0, (0.5 * (1 + Math.tanh(z * 0.797885))) * 100))).toFixed(2));
     }
 
     return {
@@ -966,7 +982,7 @@ export function calculateFinalPredictions(
       method: 'linear_regression',
       confidence,
       dataPointsUsed: n,
-      explanation: `Fitted linear regression (R² = ${rSquared}) using ${n} classmates who completed finals. Shows likely score with 80% confidence interval.`,
+      explanation: `Linear regression (R² = ${rSquared.toFixed(2)}) across ${n} classmates with finals.`,
       predictedRankLow: Math.max(1, Math.round(students.length * (1 - mySessionalPct) * 0.7)),
       predictedRankLikely: Math.max(1, Math.round(students.length * (1 - mySessionalPct))),
       predictedRankHigh: Math.min(students.length, Math.round(students.length * (1 - mySessionalPct) * 1.3) + 1),
@@ -976,9 +992,9 @@ export function calculateFinalPredictions(
   }
 
   // Sessional Proxy Method
-  const likely = Number((mySessionalPct * finalWeight).toFixed(1));
-  const low = Number(Math.max(0, likely * 0.82).toFixed(1));
-  const high = Number(Math.min(finalWeight, Math.max(likely * 1.15, likely + 4)).toFixed(1));
+  const likely = Number((mySessionalPct * finalWeight).toFixed(2));
+  const low = Number(Math.max(0, likely * 0.82).toFixed(2));
+  const high = Number(Math.min(finalWeight, Math.max(likely * 1.15, likely + 4)).toFixed(2));
 
   const neededForAPlus = scheme.targetGradeThreshold - myCalc.sessionalTotalEarned;
   let probAPlus = 0;
@@ -987,7 +1003,7 @@ export function calculateFinalPredictions(
   else {
     const rangeSpan = Math.max(1, high - low);
     probAPlus = Number(
-      (Math.min(100, Math.max(0, ((high - neededForAPlus) / rangeSpan) * 100))).toFixed(1)
+      (Math.min(100, Math.max(0, ((high - neededForAPlus) / rangeSpan) * 100))).toFixed(2)
     );
   }
 
@@ -1000,7 +1016,7 @@ export function calculateFinalPredictions(
     method: 'sessional_proxy',
     confidence,
     dataPointsUsed: 0,
-    explanation: `Classmates have not taken the final exam yet. Estimated using your sessional average (${(mySessionalPct * 100).toFixed(1)}%) as proxy with a ±15% variance window.`,
+    explanation: `Based on sessional average (${(mySessionalPct * 100).toFixed(2)}%) with ±15% range.`,
     predictedRankLow: Math.max(1, Math.round(students.length * (1 - mySessionalPct) * 0.75)),
     predictedRankLikely: Math.max(1, Math.round(students.length * (1 - mySessionalPct))),
     predictedRankHigh: Math.min(students.length, Math.round(students.length * (1 - mySessionalPct) * 1.25) + 1),
@@ -1023,30 +1039,38 @@ export function generateActionPlan(
 
   const myTrend = trends.trends.find((t) => t.student.id === meStudent.id);
 
-  if (calc.verdict === 'reachable') {
+  if (calc.verdict === 'reachable' && calc.neededInFinal !== null && calc.neededPercentage !== null) {
     if (calc.neededPercentage > 85) {
       items.push({
         id: 'plan_final_critical',
         priority: 'high',
-        title: `Target Final Exam: High Focus Required (${calc.neededInFinal}/${calc.finalWeight})`,
-        rationale: `You need ${calc.neededInFinal} out of ${calc.finalWeight} (${calc.neededPercentage}%) for an A+. Focus on high-weight problem topics first.`,
+        title: `Final Target: ${calc.neededInFinal.toFixed(2)} / ${calc.finalWeight.toFixed(2)}`,
+        rationale: `Requires ${calc.neededPercentage.toFixed(2)}% in final for ${scheme.targetGradeName}.`,
         impactScore: calc.neededInFinal,
       });
     } else {
       items.push({
         id: 'plan_final_moderate',
         priority: 'high',
-        title: `Secure ${calc.neededInFinal} marks in Semester Final`,
-        rationale: `You need ${calc.neededInFinal} out of ${calc.finalWeight} (${calc.neededPercentage}%) to achieve your target ${scheme.targetGradeName} grade.`,
+        title: `Secure ${calc.neededInFinal.toFixed(2)} marks in Semester Final`,
+        rationale: `Needs ${calc.neededInFinal.toFixed(2)} / ${calc.finalWeight.toFixed(2)} (${calc.neededPercentage.toFixed(2)}%) for ${scheme.targetGradeName}.`,
         impactScore: calc.neededInFinal,
       });
     }
+  } else if (calc.verdict === 'incomplete') {
+    items.push({
+      id: 'plan_final_incomplete',
+      priority: 'high',
+      title: `Complete Sessional Marks for ${scheme.targetGradeName} Target`,
+      rationale: calc.verdictMessage,
+      impactScore: 10,
+    });
   } else if (calc.verdict === 'secured') {
     items.push({
       id: 'plan_final_secured',
       priority: 'low',
-      title: `A+ Already Secured: Protect Your Class Rank`,
-      rationale: `Your sessional marks (${calc.sessionalTotalEarned}) alone pass the threshold. Focus on the final exam to maintain your rank (${competitors.myRank} of ${competitors.totalStudents}).`,
+      title: `${scheme.targetGradeName} Secured — Defend Rank #${competitors.myRank}`,
+      rationale: `Sessional (${calc.sessionalTotalEarned.toFixed(2)}) already exceeds threshold.`,
       impactScore: 0,
     });
   }

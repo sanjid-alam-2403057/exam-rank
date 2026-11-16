@@ -1,5 +1,6 @@
 import React from 'react';
 import { CourseHistorySnapshot, WhatChangedReport } from '../types';
+import { fmt2 } from '../utils/format';
 import {
   ResponsiveContainer,
   LineChart,
@@ -30,7 +31,7 @@ export const HistorySnapshotsModal: React.FC<HistorySnapshotsModalProps> = ({
   const chartData = snapshots.map((s, idx) => ({
     name: s.dateFormatted.split(',')[0] || `Upload #${idx + 1}`,
     Rank: s.myRank,
-    'Needed in Final': s.neededFinalAPlus,
+    'Needed in Final': Number(Number(s.neededFinalAPlus).toFixed(2)),
   }));
 
   return (
@@ -85,8 +86,8 @@ export const HistorySnapshotsModal: React.FC<HistorySnapshotsModalProps> = ({
                 <span className="text-[10px] text-slate-500 block">Sessional Marks</span>
                 <span className="text-base font-bold font-mono text-indigo-700">
                   {whatChanged.sessionalDelta >= 0
-                    ? `+${whatChanged.sessionalDelta}`
-                    : whatChanged.sessionalDelta}{' '}
+                    ? `+${fmt2(whatChanged.sessionalDelta)}`
+                    : fmt2(whatChanged.sessionalDelta)}{' '}
                   pts
                 </span>
               </div>
@@ -129,7 +130,7 @@ export const HistorySnapshotsModal: React.FC<HistorySnapshotsModalProps> = ({
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                   <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="#64748B" />
                   <YAxis tick={{ fontSize: 10 }} stroke="#64748B" />
-                  <Tooltip />
+                  <Tooltip formatter={(val: any, name: any) => [name === 'Rank' ? `#${val}` : fmt2(Number(val)), name]} />
                   <Legend wrapperStyle={{ fontSize: '11px' }} />
                   <Line type="monotone" dataKey="Rank" stroke="#4F46E5" strokeWidth={2} />
                   <Line type="monotone" dataKey="Needed in Final" stroke="#059669" strokeWidth={2} />
@@ -155,8 +156,8 @@ export const HistorySnapshotsModal: React.FC<HistorySnapshotsModalProps> = ({
                   <span className="text-[11px] text-slate-500 font-mono">{snap.dateFormatted}</span>
                 </div>
                 <div className="text-right font-mono text-xs">
-                  <div>Rank <strong className="text-indigo-700">#{snap.myRank}</strong> · Sessional: {snap.mySessional}</div>
-                  <div className="text-[11px] text-slate-500">Needed Final: {snap.neededFinalAPlus} pts</div>
+                  <div>Rank <strong className="text-indigo-700">#{snap.myRank}</strong> · Sessional: {fmt2(snap.mySessional)}</div>
+                  <div className="text-[11px] text-slate-500">Needed Final: {fmt2(snap.neededFinalAPlus)} pts</div>
                 </div>
               </div>
             ))}

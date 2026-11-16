@@ -16,6 +16,7 @@ import {
 } from '../types';
 import { DEFAULT_ASSESSMENT_SCHEME } from '../data/defaultScheme';
 import { getDemoStudents } from '../data/demoData';
+import { suggestColumnMappings, tokenizeCsv, validateAndParseRecords } from '../algorithms/csvParser';
 
 export interface StoredCourse {
   id: string; // Unique course identifier (e.g. 'CSE-301')
@@ -561,4 +562,82 @@ export async function deleteAllData(): Promise<void> {
   } catch (err) {
     console.warn('[EXAMINEX STORAGE] Error wiping data:', err);
   }
+}
+
+/**
+ * Attempts to load saved course backup (./saved-courses.json) or CSV (./class-data.csv)
+ * committed in the GitHub repository's public/ folder so the user never has to re-upload.
+ */
+export async function tryLoadGitHubRepoData(): Promise<{
+  loaded: boolean;
+  source?: 'saved-courses.json' | 'class-data.csv';
+  coursesCount?: number;
+}> {
+  // 1. Check public/saved-courses.json
+  try {
+    const res = await fetch('./saved-courses.json', { cache: 'no-store' });
+    if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('text/html')) {
+        const parsed = await res.json();
+        const check = validateBackupFile(parsed);
+        if (check.isValid && check.coursesCount > 0) {
+          const imported = await importAll(parsed, 'replace');
+          return {
+            loaded: true,
+            source: 'saved-courses.json',
+            coursesCount: imported.coursesImported,
+          };
+        }
+      }
+    }
+  } catch {
+    // No saved-courses.json present; ignore silently
+  }
+
+  // 2. Fallback check public/class-data.csv
+  try {
+    const csvRes = await fetch('./class-data.csv', { cache: 'no-store' });
+    if (csvRes.ok) {
+      const contentType = csvRes.headers.get('content-type') || '';
+      if (!contentType.includes('text/html')) {
+        const csvText = await csvRes.text();
+        const tokens = tokenizeCsv(csvText);
+        if (tokens.length >= 2) {
+          const mappings = suggestColumnMappings(tokens[0], DEFAULT_ASSESSMENT_SCHEME);
+          const parsed = validateAndParseRecords(tokens, mappings, DEFAULT_ASSESSMENT_SCHEME, 'missing');
+          if (parsed.students.length > 0) {
+            const me = parsed.students.find((s) => s.isMe) || parsed.students[0];
+            const course: StoredCourse = {
+              id: 'CSE-301',
+              courseCode: DEFAULT_ASSESSMENT_SCHEME.courseCode,
+              courseName: DEFAULT_ASSESSMENT_SCHEME.courseName,
+              scheme: DEFAULT_ASSESSMENT_SCHEME,
+              students: parsed.students,
+              myRoll: me?.roll || '',
+              useManualMarks: false,
+              manualStudent: null,
+              watchlist: [],
+              expectationOverrides: {},
+              snapshots: [],
+              rawCsvText: csvText,
+              csvFilename: 'class-data.csv',
+              lastUpdated: Date.now(),
+            };
+            await saveCourse(course);
+            await saveSettings({ activeCourseId: course.id });
+            return {
+              loaded: true,
+              source: 'class-data.csv',
+              coursesCount: 1,
+            };
+          }
+        }
+      }
+    }
+  } catch {
+    // No class-data.csv present; ignore silently
+  }
+
+  return { loaded: false };
 }
