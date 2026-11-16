@@ -109,6 +109,7 @@ function AppContent() {
           if (ghLoad.loaded) {
             list = await listCourses();
             const reloadedSettings = await loadSettings();
+            setIsAnonymized(reloadedSettings.isAnonymized ?? true);
             const active = (await loadCourse(reloadedSettings.activeCourseId)) || (list[0] ? await loadCourse(list[0].id) : null);
             if (active) setCurrentCourse(active);
           } else {

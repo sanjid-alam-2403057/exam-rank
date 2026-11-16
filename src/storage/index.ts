@@ -573,26 +573,29 @@ export async function tryLoadGitHubRepoData(): Promise<{
   source?: 'saved-courses.json' | 'class-data.csv';
   coursesCount?: number;
 }> {
-  // 1. Check public/saved-courses.json
-  try {
-    const res = await fetch('./saved-courses.json', { cache: 'no-store' });
-    if (res.ok) {
-      const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('text/html')) {
-        const parsed = await res.json();
-        const check = validateBackupFile(parsed);
-        if (check.isValid && check.coursesCount > 0) {
-          const imported = await importAll(parsed, 'replace');
-          return {
-            loaded: true,
-            source: 'saved-courses.json',
-            coursesCount: imported.coursesImported,
-          };
+  // 1. Check public/saved-courses.json (and fallback public/assets/aistudio/saved-courses.json)
+  const jsonCandidatePaths = ['./saved-courses.json', './assets/aistudio/saved-courses.json'];
+  for (const path of jsonCandidatePaths) {
+    try {
+      const res = await fetch(path, { cache: 'no-store' });
+      if (res.ok) {
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('text/html')) {
+          const parsed = await res.json();
+          const check = validateBackupFile(parsed);
+          if (check.isValid && check.coursesCount > 0) {
+            const imported = await importAll(parsed, 'replace');
+            return {
+              loaded: true,
+              source: 'saved-courses.json',
+              coursesCount: imported.coursesImported,
+            };
+          }
         }
       }
+    } catch {
+      // Try next candidate path
     }
-  } catch {
-    // No saved-courses.json present; ignore silently
   }
 
   // 2. Fallback check public/class-data.csv
