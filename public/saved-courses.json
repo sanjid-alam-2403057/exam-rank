@@ -1,0 +1,788 @@
+{
+  "version": 2,
+  "appName": "EXAMINEX RANK",
+  "exportedAt": "2026-11-17T05:56:29.328Z",
+  "settings": {
+    "activeCourseId": "HUM-2213",
+    "isAnonymized": false,
+    "absentHandlingMode": "missing",
+    "lastBackupTimestamp": 1794894989328
+  },
+  "courses": [
+    {
+      "id": "CSE-2200",
+      "courseCode": "CSE 2200",
+      "courseName": "Tech Writing",
+      "scheme": {
+        "id": "cse301_default",
+        "courseName": "Tech Writing",
+        "courseCode": "CSE 2200",
+        "totalMarks": 100,
+        "targetGradeThreshold": 80,
+        "targetGradeName": "A+",
+        "gradeThresholds": [
+          {
+            "grade": "A+",
+            "minMarks": 80,
+            "gpaPoint": 4
+          },
+          {
+            "grade": "A",
+            "minMarks": 75,
+            "gpaPoint": 3.75
+          },
+          {
+            "grade": "A-",
+            "minMarks": 70,
+            "gpaPoint": 3.5
+          },
+          {
+            "grade": "B+",
+            "minMarks": 65,
+            "gpaPoint": 3.25
+          },
+          {
+            "grade": "B",
+            "minMarks": 60,
+            "gpaPoint": 3
+          },
+          {
+            "grade": "B-",
+            "minMarks": 55,
+            "gpaPoint": 2.75
+          },
+          {
+            "grade": "C+",
+            "minMarks": 50,
+            "gpaPoint": 2.5
+          },
+          {
+            "grade": "C",
+            "minMarks": 45,
+            "gpaPoint": 2.25
+          },
+          {
+            "grade": "D",
+            "minMarks": 40,
+            "gpaPoint": 2
+          },
+          {
+            "grade": "F",
+            "minMarks": 0,
+            "gpaPoint": 0
+          }
+        ],
+        "components": [
+          {
+            "id": "attendance",
+            "name": "Attendance",
+            "type": "single",
+            "weight": 10,
+            "maxMarks": 10,
+            "isFinalExam": false
+          },
+          {
+            "id": "ct",
+            "name": "Class Tests (Best 3 of 4)",
+            "type": "best_n_of_m",
+            "weight": 20,
+            "bestN": 3,
+            "isFinalExam": false,
+            "subComponents": [
+              {
+                "id": "ct1",
+                "name": "CT 1",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct2",
+                "name": "CT 2",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct3",
+                "name": "CT 3",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct4",
+                "name": "CT 4",
+                "maxMarks": 20
+              }
+            ]
+          },
+          {
+            "id": "assignment",
+            "name": "Assignment",
+            "type": "single",
+            "weight": 10,
+            "maxMarks": 10,
+            "isFinalExam": false
+          },
+          {
+            "id": "final",
+            "name": "Semester Final Exam",
+            "type": "single",
+            "weight": 60,
+            "maxMarks": 60,
+            "isFinalExam": true
+          }
+        ]
+      },
+      "students": [],
+      "myRoll": "",
+      "useManualMarks": false,
+      "manualStudent": null,
+      "watchlist": [],
+      "expectationOverrides": {},
+      "snapshots": [],
+      "lastUpdated": 1794835386181
+    },
+    {
+      "id": "CSE-2201",
+      "courseCode": "CSE 2201",
+      "courseName": "Algorithm",
+      "scheme": {
+        "id": "cse301_default",
+        "courseName": "Algorithm",
+        "courseCode": "CSE 2201",
+        "totalMarks": 100,
+        "targetGradeThreshold": 80,
+        "targetGradeName": "A+",
+        "gradeThresholds": [
+          {
+            "grade": "A+",
+            "minMarks": 80,
+            "gpaPoint": 4
+          },
+          {
+            "grade": "A",
+            "minMarks": 75,
+            "gpaPoint": 3.75
+          },
+          {
+            "grade": "A-",
+            "minMarks": 70,
+            "gpaPoint": 3.5
+          },
+          {
+            "grade": "B+",
+            "minMarks": 65,
+            "gpaPoint": 3.25
+          },
+          {
+            "grade": "B",
+            "minMarks": 60,
+            "gpaPoint": 3
+          },
+          {
+            "grade": "B-",
+            "minMarks": 55,
+            "gpaPoint": 2.75
+          },
+          {
+            "grade": "C+",
+            "minMarks": 50,
+            "gpaPoint": 2.5
+          },
+          {
+            "grade": "C",
+            "minMarks": 45,
+            "gpaPoint": 2.25
+          },
+          {
+            "grade": "D",
+            "minMarks": 40,
+            "gpaPoint": 2
+          },
+          {
+            "grade": "F",
+            "minMarks": 0,
+            "gpaPoint": 0
+          }
+        ],
+        "components": [
+          {
+            "id": "attendance",
+            "name": "Attendance",
+            "type": "single",
+            "weight": 10,
+            "maxMarks": 10,
+            "isFinalExam": false
+          },
+          {
+            "id": "ct",
+            "name": "Class Tests (Best 3 of 4)",
+            "type": "best_n_of_m",
+            "weight": 20,
+            "bestN": 3,
+            "isFinalExam": false,
+            "subComponents": [
+              {
+                "id": "ct1",
+                "name": "CT 1",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct2",
+                "name": "CT 2",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct3",
+                "name": "CT 3",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct4",
+                "name": "CT 4",
+                "maxMarks": 20
+              }
+            ]
+          },
+          {
+            "id": "assignment",
+            "name": "Assignment",
+            "type": "single",
+            "weight": 10,
+            "maxMarks": 10,
+            "isFinalExam": false
+          },
+          {
+            "id": "final",
+            "name": "Semester Final Exam",
+            "type": "single",
+            "weight": 60,
+            "maxMarks": 60,
+            "isFinalExam": true
+          }
+        ]
+      },
+      "students": [],
+      "myRoll": "",
+      "useManualMarks": false,
+      "manualStudent": null,
+      "watchlist": [],
+      "expectationOverrides": {},
+      "snapshots": [],
+      "lastUpdated": 1794835269116
+    },
+    {
+      "id": "CSE-2203",
+      "courseCode": "CSE 2203",
+      "courseName": "Numerical Methods",
+      "scheme": {
+        "id": "cse301_default",
+        "courseName": "Numerical Methods",
+        "courseCode": "CSE 2203",
+        "totalMarks": 100,
+        "targetGradeThreshold": 80,
+        "targetGradeName": "A+",
+        "gradeThresholds": [
+          {
+            "grade": "A+",
+            "minMarks": 80,
+            "gpaPoint": 4
+          },
+          {
+            "grade": "A",
+            "minMarks": 75,
+            "gpaPoint": 3.75
+          },
+          {
+            "grade": "A-",
+            "minMarks": 70,
+            "gpaPoint": 3.5
+          },
+          {
+            "grade": "B+",
+            "minMarks": 65,
+            "gpaPoint": 3.25
+          },
+          {
+            "grade": "B",
+            "minMarks": 60,
+            "gpaPoint": 3
+          },
+          {
+            "grade": "B-",
+            "minMarks": 55,
+            "gpaPoint": 2.75
+          },
+          {
+            "grade": "C+",
+            "minMarks": 50,
+            "gpaPoint": 2.5
+          },
+          {
+            "grade": "C",
+            "minMarks": 45,
+            "gpaPoint": 2.25
+          },
+          {
+            "grade": "D",
+            "minMarks": 40,
+            "gpaPoint": 2
+          },
+          {
+            "grade": "F",
+            "minMarks": 0,
+            "gpaPoint": 0
+          }
+        ],
+        "components": [
+          {
+            "id": "attendance",
+            "name": "Attendance",
+            "type": "single",
+            "weight": 10,
+            "maxMarks": 10,
+            "isFinalExam": false
+          },
+          {
+            "id": "ct",
+            "name": "Class Tests (Best 3 of 4)",
+            "type": "best_n_of_m",
+            "weight": 20,
+            "bestN": 3,
+            "isFinalExam": false,
+            "subComponents": [
+              {
+                "id": "ct1",
+                "name": "CT 1",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct2",
+                "name": "CT 2",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct3",
+                "name": "CT 3",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct4",
+                "name": "CT 4",
+                "maxMarks": 20
+              }
+            ]
+          },
+          {
+            "id": "assignment",
+            "name": "Assignment",
+            "type": "single",
+            "weight": 10,
+            "maxMarks": 10,
+            "isFinalExam": false
+          },
+          {
+            "id": "final",
+            "name": "Semester Final Exam",
+            "type": "single",
+            "weight": 60,
+            "maxMarks": 60,
+            "isFinalExam": true
+          }
+        ]
+      },
+      "students": [],
+      "myRoll": "",
+      "useManualMarks": false,
+      "manualStudent": null,
+      "watchlist": [],
+      "expectationOverrides": {},
+      "snapshots": [],
+      "lastUpdated": 1794835331243
+    },
+    {
+      "id": "CSE-2205",
+      "courseCode": "CSE 2205",
+      "courseName": "Microprocessor",
+      "scheme": {
+        "id": "cse301_default",
+        "courseName": "Microprocessor",
+        "courseCode": "CSE 2205",
+        "totalMarks": 100,
+        "targetGradeThreshold": 80,
+        "targetGradeName": "A+",
+        "gradeThresholds": [
+          {
+            "grade": "A+",
+            "minMarks": 80,
+            "gpaPoint": 4
+          },
+          {
+            "grade": "A",
+            "minMarks": 75,
+            "gpaPoint": 3.75
+          },
+          {
+            "grade": "A-",
+            "minMarks": 70,
+            "gpaPoint": 3.5
+          },
+          {
+            "grade": "B+",
+            "minMarks": 65,
+            "gpaPoint": 3.25
+          },
+          {
+            "grade": "B",
+            "minMarks": 60,
+            "gpaPoint": 3
+          },
+          {
+            "grade": "B-",
+            "minMarks": 55,
+            "gpaPoint": 2.75
+          },
+          {
+            "grade": "C+",
+            "minMarks": 50,
+            "gpaPoint": 2.5
+          },
+          {
+            "grade": "C",
+            "minMarks": 45,
+            "gpaPoint": 2.25
+          },
+          {
+            "grade": "D",
+            "minMarks": 40,
+            "gpaPoint": 2
+          },
+          {
+            "grade": "F",
+            "minMarks": 0,
+            "gpaPoint": 0
+          }
+        ],
+        "components": [
+          {
+            "id": "attendance",
+            "name": "Attendance",
+            "type": "single",
+            "weight": 10,
+            "maxMarks": 10,
+            "isFinalExam": false
+          },
+          {
+            "id": "ct",
+            "name": "Class Tests (Best 3 of 4)",
+            "type": "best_n_of_m",
+            "weight": 20,
+            "bestN": 3,
+            "isFinalExam": false,
+            "subComponents": [
+              {
+                "id": "ct1",
+                "name": "CT 1",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct2",
+                "name": "CT 2",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct3",
+                "name": "CT 3",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct4",
+                "name": "CT 4",
+                "maxMarks": 20
+              }
+            ]
+          },
+          {
+            "id": "assignment",
+            "name": "Assignment",
+            "type": "single",
+            "weight": 10,
+            "maxMarks": 10,
+            "isFinalExam": false
+          },
+          {
+            "id": "final",
+            "name": "Semester Final Exam",
+            "type": "single",
+            "weight": 60,
+            "maxMarks": 60,
+            "isFinalExam": true
+          }
+        ]
+      },
+      "students": [],
+      "myRoll": "",
+      "useManualMarks": false,
+      "manualStudent": null,
+      "watchlist": [],
+      "expectationOverrides": {},
+      "snapshots": [],
+      "lastUpdated": 1794835403592
+    },
+    {
+      "id": "HUM-2213",
+      "courseCode": "HUM 2213",
+      "courseName": "Hum 2213",
+      "scheme": {
+        "id": "cse301_default",
+        "courseName": "Hum 2213",
+        "courseCode": "HUM 2213",
+        "totalMarks": 100,
+        "targetGradeThreshold": 80,
+        "targetGradeName": "A+",
+        "gradeThresholds": [
+          {
+            "grade": "A+",
+            "minMarks": 80,
+            "gpaPoint": 4
+          },
+          {
+            "grade": "A",
+            "minMarks": 75,
+            "gpaPoint": 3.75
+          },
+          {
+            "grade": "A-",
+            "minMarks": 70,
+            "gpaPoint": 3.5
+          },
+          {
+            "grade": "B+",
+            "minMarks": 65,
+            "gpaPoint": 3.25
+          },
+          {
+            "grade": "B",
+            "minMarks": 60,
+            "gpaPoint": 3
+          },
+          {
+            "grade": "B-",
+            "minMarks": 55,
+            "gpaPoint": 2.75
+          },
+          {
+            "grade": "C+",
+            "minMarks": 50,
+            "gpaPoint": 2.5
+          },
+          {
+            "grade": "C",
+            "minMarks": 45,
+            "gpaPoint": 2.25
+          },
+          {
+            "grade": "D",
+            "minMarks": 40,
+            "gpaPoint": 2
+          },
+          {
+            "grade": "F",
+            "minMarks": 0,
+            "gpaPoint": 0
+          }
+        ],
+        "components": [
+          {
+            "id": "attendance",
+            "name": "Attendance",
+            "type": "single",
+            "weight": 10,
+            "maxMarks": 10,
+            "isFinalExam": false
+          },
+          {
+            "id": "ct",
+            "name": "Class Tests (Best 3 of 4)",
+            "type": "best_n_of_m",
+            "weight": 20,
+            "bestN": 3,
+            "isFinalExam": false,
+            "subComponents": [
+              {
+                "id": "ct1",
+                "name": "CT 1",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct2",
+                "name": "CT 2",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct3",
+                "name": "CT 3",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct4",
+                "name": "CT 4",
+                "maxMarks": 20
+              }
+            ]
+          },
+          {
+            "id": "assignment",
+            "name": "Assignment",
+            "type": "single",
+            "weight": 10,
+            "maxMarks": 10,
+            "isFinalExam": false
+          },
+          {
+            "id": "final",
+            "name": "Semester Final Exam",
+            "type": "single",
+            "weight": 60,
+            "maxMarks": 60,
+            "isFinalExam": true
+          }
+        ]
+      },
+      "students": [],
+      "myRoll": "",
+      "useManualMarks": false,
+      "manualStudent": null,
+      "watchlist": [],
+      "expectationOverrides": {},
+      "snapshots": [],
+      "lastUpdated": 1794894925115,
+      "csvFilename": "examinex_sample_marks2.csv"
+    },
+    {
+      "id": "MATH-2213",
+      "courseCode": "MATH 2213",
+      "courseName": "Math",
+      "scheme": {
+        "id": "cse301_default",
+        "courseName": "Math",
+        "courseCode": "MATH 2213",
+        "totalMarks": 100,
+        "targetGradeThreshold": 80,
+        "targetGradeName": "A+",
+        "gradeThresholds": [
+          {
+            "grade": "A+",
+            "minMarks": 80,
+            "gpaPoint": 4
+          },
+          {
+            "grade": "A",
+            "minMarks": 75,
+            "gpaPoint": 3.75
+          },
+          {
+            "grade": "A-",
+            "minMarks": 70,
+            "gpaPoint": 3.5
+          },
+          {
+            "grade": "B+",
+            "minMarks": 65,
+            "gpaPoint": 3.25
+          },
+          {
+            "grade": "B",
+            "minMarks": 60,
+            "gpaPoint": 3
+          },
+          {
+            "grade": "B-",
+            "minMarks": 55,
+            "gpaPoint": 2.75
+          },
+          {
+            "grade": "C+",
+            "minMarks": 50,
+            "gpaPoint": 2.5
+          },
+          {
+            "grade": "C",
+            "minMarks": 45,
+            "gpaPoint": 2.25
+          },
+          {
+            "grade": "D",
+            "minMarks": 40,
+            "gpaPoint": 2
+          },
+          {
+            "grade": "F",
+            "minMarks": 0,
+            "gpaPoint": 0
+          }
+        ],
+        "components": [
+          {
+            "id": "attendance",
+            "name": "Attendance",
+            "type": "single",
+            "weight": 10,
+            "maxMarks": 10,
+            "isFinalExam": false
+          },
+          {
+            "id": "ct",
+            "name": "Class Tests (Best 3 of 4)",
+            "type": "best_n_of_m",
+            "weight": 20,
+            "bestN": 3,
+            "isFinalExam": false,
+            "subComponents": [
+              {
+                "id": "ct1",
+                "name": "CT 1",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct2",
+                "name": "CT 2",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct3",
+                "name": "CT 3",
+                "maxMarks": 20
+              },
+              {
+                "id": "ct4",
+                "name": "CT 4",
+                "maxMarks": 20
+              }
+            ]
+          },
+          {
+            "id": "assignment",
+            "name": "Assignment",
+            "type": "single",
+            "weight": 10,
+            "maxMarks": 10,
+            "isFinalExam": false
+          },
+          {
+            "id": "final",
+            "name": "Semester Final Exam",
+            "type": "single",
+            "weight": 60,
+            "maxMarks": 60,
+            "isFinalExam": true
+          }
+        ]
+      },
+      "students": [],
+      "myRoll": "",
+      "useManualMarks": false,
+      "manualStudent": null,
+      "watchlist": [],
+      "expectationOverrides": {},
+      "snapshots": [],
+      "lastUpdated": 1794835429606
+    }
+  ]
+}
